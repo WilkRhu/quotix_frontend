@@ -218,7 +218,7 @@ export default function PerfilVendedorAdmin() {
                     <div className="text-center mb-4">
                       {vendedor.foto ? (
                         <img 
-                          src={`${API_BASE_URL}/uploads/vendedores/fotos/${vendedor.foto}`}
+                          src={`${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}`}
                           alt="Foto"
                           className="rounded-circle mb-3"
                           style={{ width: '100px', height: '100px', objectFit: 'cover' }}

@@ -39,7 +39,7 @@ export default function GestaoVendedores() {
 
   const carregarVendedores = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/vendedores`, {
+      const response = await axios.get(`${API_BASE_URL}/api/vendedores`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setVendedores(response.data)
@@ -69,12 +69,12 @@ export default function GestaoVendedores() {
       
       let vendedorId
       if (editandoVendedor) {
-        const response = await axios.post(`${API_BASE_URL}/vendedores/${editandoVendedor.id}`, dataToSend, {
+        const response = await axios.post(`${API_BASE_URL}/api/vendedores/${editandoVendedor.id}`, dataToSend, {
           headers: { Authorization: `Bearer ${token}` }
         })
         vendedorId = editandoVendedor.id
       } else {
-        const response = await axios.post(`${API_BASE_URL}/vendedores`, dataToSend, {
+        const response = await axios.post(`${API_BASE_URL}/api/vendedores`, dataToSend, {
           headers: { Authorization: `Bearer ${token}` }
         })
         vendedorId = response.data.id
@@ -84,10 +84,10 @@ export default function GestaoVendedores() {
       if (fotoFile && vendedorId) {
         const fotoFormData = new FormData()
         fotoFormData.append('foto', fotoFile)
-        await axios.post(`${API_BASE_URL}/vendedores/${vendedorId}/foto`, fotoFormData, {
-          headers: { 
+        await axios.post(`${API_BASE_URL}/api/vendedores/${vendedorId}/foto`, fotoFormData, {
+          headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'multipart/form-data',
           }
         })
       }
@@ -137,7 +137,7 @@ export default function GestaoVendedores() {
   const handleEditar = (vendedor: any) => {
     setEditandoVendedor(vendedor)
     setFotoFile(null)
-    setFotoPreview(vendedor.foto ? `${API_BASE_URL}/uploads/vendedores/fotos/${vendedor.foto}` : null)
+    setFotoPreview(vendedor.foto ? `${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}` : null)
     const lojaSelecionada = lojas.find((loja: any) => loja.id == vendedor.lojaId) as any
     setFiltroLoja(lojaSelecionada ? `${lojaSelecionada.nome} - ${lojaSelecionada.cidade}/${lojaSelecionada.estado}` : '')
     setShowDropdown(false)
@@ -162,7 +162,7 @@ export default function GestaoVendedores() {
   const handleDesativar = async (id: string) => {
     if (confirm('Deseja realmente desativar este vendedor?')) {
       try {
-        await axios.post(`${API_BASE_URL}/vendedores/${id}/desativar`, {}, {
+        await axios.post(`${API_BASE_URL}/api/vendedores/${id}/desativar`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         })
         await carregarVendedores()
@@ -177,7 +177,7 @@ export default function GestaoVendedores() {
   const handleAtivar = async (id: string) => {
     if (confirm('Deseja realmente ativar este vendedor?')) {
       try {
-        await axios.post(`${API_BASE_URL}/vendedores/${id}/ativar`, {}, {
+        await axios.post(`${API_BASE_URL}/api/vendedores/${id}/ativar`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         })
         await carregarVendedores()
@@ -322,10 +322,10 @@ export default function GestaoVendedores() {
                           <td>
                             {vendedor.foto ? (
                               <img 
-                                src={`${API_BASE_URL}/uploads/vendedores/fotos/${vendedor.foto}`}
+                                src={`${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}`}
                                 alt="Foto"
                                 className="rounded-circle"
-                                style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                style={{ width: '50px', height: '50px', objectFit: 'cover' }}
                               />
                             ) : (
                               <div 

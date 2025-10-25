@@ -25,6 +25,81 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/login/layout.js"
+    ],
+    "/admin/lojas/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/lojas/page.js"
+    ],
+    "/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/dashboard/page.js"
+    ],
+    "/admin/vendedores/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/vendedores/page.js"
+    ],
+    "/admin/planos-venda/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/planos-venda/page.js"
+    ],
+    "/admin/adesao-planos/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/adesao-planos/page.js"
+    ],
+    "/admin/cotacoes/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/cotacoes/page.js"
+    ],
+    "/vendas/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/vendas/page.js"
+    ],
+    "/admin/usuarios/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/usuarios/page.js"
+    ],
+    "/lojista/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/lojista/page.js"
+    ],
+    "/lojista/loja/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/lojista/loja/page.js"
+    ],
+    "/lojista/vendedores/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/lojista/vendedores/page.js"
+    ],
+    "/lojista/tipos-cotacao/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/lojista/tipos-cotacao/page.js"
+    ],
+    "/lojista/planos/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/lojista/planos/page.js"
+    ],
+    "/vendedor/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/vendedor/page.js"
+    ],
+    "/vendedor/nova-venda/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/vendedor/nova-venda/page.js"
     ]
   }
 }

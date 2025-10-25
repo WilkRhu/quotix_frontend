@@ -98,7 +98,7 @@ const resolveImageUrl = (foto?: string | null) => {
     return `${API_BASE_URL}/${foto.replace(/^\/+/, '')}`
   }
 
-  return `${API_BASE_URL}/uploads/vendedores/fotos/${foto}`
+  return `${API_BASE_URL}/api/uploads/vendedores/fotos/${foto}`
 }
 
 export default function PainelCliente() {

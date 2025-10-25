@@ -63,7 +63,13 @@ const useAuthStoreBase: StateCreator<AuthStoreState, [], [], AuthStoreState> = (
     set({
       user: null,
       token: null,
+      hasHydrated: true,
     })
+    // Limpar localStorage também
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth-store')
+      localStorage.removeItem('token')
+    }
   },
   setHydrated: () => {
     set({ hasHydrated: true })

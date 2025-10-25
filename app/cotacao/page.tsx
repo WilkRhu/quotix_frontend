@@ -12,7 +12,7 @@ import { API_BASE_URL } from '../../lib/api'
 
 export default function Cotacao() {
   const { showToast } = useToast()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [formData, setFormData] = useState({
     tipoVeiculo: '',
     marca: '',
@@ -178,7 +178,6 @@ export default function Cotacao() {
     e.preventDefault()
     setBuscandoOfertas(true)
     try {
-      const token = localStorage.getItem('token')
       const response = await axios.post(`${API_BASE_URL}/ofertas/buscar-por-loja`, {
         veiculo: veiculoSelecionado,
         tipoVeiculo: formData.tipoVeiculo,
@@ -242,7 +241,6 @@ export default function Cotacao() {
 
     setContratando(true)
     try {
-      const token = localStorage.getItem('token')
       const valorVeiculoParsed = veiculoSelecionado.Valor ? 
         parseFloat(veiculoSelecionado.Valor.toString().replace(/[^\d,]/g, '').replace(',', '.')) : 
         undefined

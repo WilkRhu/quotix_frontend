@@ -44,7 +44,7 @@ export default function AdesaoPlanos() {
 
     const carregarPlanos = async () => {
         try {
-            const res = await axios.get(`${API_BASE_URL}/planos`, {
+            const res = await axios.get(`${API_BASE_URL}/api/planos`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setPlanos(res.data)
@@ -57,7 +57,7 @@ export default function AdesaoPlanos() {
     const carregarLojas = async () => {
         setLoading(true)
         try {
-            const res = await axios.get(`${API_BASE_URL}/lojas`, {
+            const res = await axios.get(`${API_BASE_URL}/api/lojas`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             setLojas(res.data)
@@ -96,7 +96,7 @@ export default function AdesaoPlanos() {
         }
 
         try {
-            await axios.post(`${API_BASE_URL}/lojas/${selectedLoja}/plano`, formData, {
+            await axios.post(`${API_BASE_URL}/api/lojas/${selectedLoja}/plano`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             showToast('Adesão ao plano realizada com sucesso!', 'success')
@@ -181,7 +181,7 @@ export default function AdesaoPlanos() {
                                                         <div className="d-flex align-items-center">
                                                             {loja.logo ? (
                                                                 <img
-                                                                    src={`${API_BASE_URL}/uploads/lojas/logomarcas/${loja.logo}`}
+                                                                    src={`${API_BASE_URL}/api/uploads/lojas/logomarcas/${loja.logo}`}
                                                                     alt={`Logo ${loja.nome}`}
                                                                     className="rounded me-2"
                                                                     style={{ width: '32px', height: '32px', objectFit: 'cover' }}

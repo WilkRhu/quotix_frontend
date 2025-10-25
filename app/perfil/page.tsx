@@ -385,7 +385,7 @@ export default function Perfil() {
                   <div className="text-center mb-4">
                     {user?.role === Role.SELLER && vendedor?.foto ? (
                       <img
-                        src={`${API_BASE_URL}/uploads/vendedores/fotos/${vendedor.foto}`}
+                        src={`${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}`}
                         alt="Foto do vendedor"
                         className="rounded-circle mb-3"
                         style={{ width: '100px', height: '100px', objectFit: 'cover' }}

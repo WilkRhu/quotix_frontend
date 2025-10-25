@@ -62,7 +62,7 @@ const initialFormData: LojaFormData = {
 }
 
 export default function GestaoLojas() {
-  const { token, user } = useAuth()
+  const { token, user, isLoading } = useAuth()
   const { showToast } = useToast()
   const [lojas, setLojas] = useState<Loja[]>([])
   const [planos, setPlanos] = useState<PlanoVenda[]>([])
@@ -119,50 +119,90 @@ export default function GestaoLojas() {
   }
 
   const carregarPlanos = async () => {
+    if (!token) {
+      console.log('Token não disponível para carregar planos')
+      showToast('Token de autenticação não encontrado', 'error')
+      return
+    }
+    
     try {
+      console.log('Token para carregar planos:', token)
       const response = await axios.get(`${API_BASE_URL}/api/planos`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setPlanos(response.data)
     } catch (error) {
       console.error('Erro ao carregar planos:', error)
-      showToast('Erro ao carregar planos', 'error')
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        showToast('Sessão expirada. Faça login novamente.', 'error')
+      } else {
+        showToast('Erro ao carregar planos', 'error')
+      }
     }
   }
 
   const carregarLojistas = async () => {
-    if (!token) return
+    if (!token) {
+      console.log('Token não disponível para carregar lojistas')
+      return
+    }
+    
     try {
       setCarregandoLojistas(true)
+      console.log('Token para carregar lojistas:', token)
       const response = await axios.get(`${API_BASE_URL}/api/users/lojistas`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setLojistas(response.data)
     } catch (error) {
       console.error('Erro ao carregar usuários lojistas:', error)
-      showToast('Erro ao carregar usuários lojistas', 'error')
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        showToast('Sessão expirada. Faça login novamente.', 'error')
+      } else {
+        showToast('Erro ao carregar usuários lojistas', 'error')
+      }
     } finally {
       setCarregandoLojistas(false)
     }
   }
 
   useEffect(() => {
+    console.log('useEffect executado - isLoading:', isLoading, 'token:', token, 'user:', user)
+    
+    // Aguarda a hidratação completa antes de fazer requisições
+    if (isLoading) {
+      console.log('Ainda carregando, aguardando hidratação...')
+      return
+    }
+    
     // Só carrega dados se o usuário é admin
     if (token && user && user.role === Role.ADMIN) {
+      console.log('Carregando dados - usuário é admin')
       carregarLojas()
       carregarPlanos()
       carregarLojistas()
+    } else {
+      console.log('Não carregando dados - token:', !!token, 'user:', !!user, 'role:', user?.role)
     }
-  }, [token, user])
+  }, [token, user, isLoading])
 
   const carregarLojas = async () => {
+    if (!token) {
+      console.log('Token não disponível para carregar lojas')
+      return
+    }
+    
     try {
+      console.log('Token para carregar lojas:', token)
       const response = await axios.get(`${API_BASE_URL}/api/lojas`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setLojas(response.data)
     } catch (error) {
       console.error('Erro ao carregar lojas:', error)
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        showToast('Sessão expirada. Faça login novamente.', 'error')
+      }
     }
   }
 
@@ -170,9 +210,12 @@ export default function GestaoLojas() {
     e.preventDefault()
 
     if (!token) {
+      console.log('Token não disponível no submit')
       showToast('Sessão expirada. Faça login novamente.', 'error')
       return
     }
+
+    console.log('Token no submit:', token)
 
     if (responsavelModo === 'existing' && !formData.lojistaUserId) {
       showToast('Selecione um usuário lojista responsável.', 'error')
@@ -349,6 +392,20 @@ export default function GestaoLojas() {
   return (
     <ProtectedRoute requiredRoles={[Role.ADMIN]}>
       <DashboardLayout title="Gestão de Lojas">
+        {isLoading ? (
+          <div className="row">
+            <div className="col-12">
+              <div className="card">
+                <div className="card-body text-center">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Carregando...</span>
+                  </div>
+                  <p className="mt-3 mb-0">Inicializando dados...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="row">
           <div className="col-12">
             <div className="card">
@@ -486,6 +543,7 @@ export default function GestaoLojas() {
             </div>
           </div>
         </div>
+        )}
 
         {showModal && (
           <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>

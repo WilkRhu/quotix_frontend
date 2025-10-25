@@ -105,7 +105,7 @@ export default function TiposCotacaoLojista() {
         return
       }
 
-      const response = await fetch(`${API_BASE_URL}/tipos-cotacao-loja`, {
+      const response = await fetch(`${API_BASE_URL}/api/tipos-cotacao-loja`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -233,8 +233,8 @@ export default function TiposCotacaoLojista() {
       payload.lojaId = lojaIdForPayload
 
       const endpoint = editingTipo
-        ? `${API_BASE_URL}/tipos-cotacao-loja/${editingTipo.id}`
-        : `${API_BASE_URL}/tipos-cotacao-loja`
+        ? `${API_BASE_URL}/api/tipos-cotacao-loja/${editingTipo.id}`
+        : `${API_BASE_URL}/api/tipos-cotacao-loja`
 
       const method = editingTipo ? 'PATCH' : 'POST'
 
@@ -276,7 +276,7 @@ export default function TiposCotacaoLojista() {
         return
       }
       setActionLoadingId(tipo.id)
-      const endpoint = `${API_BASE_URL}/tipos-cotacao-loja/${tipo.id}/${tipo.ativo ? 'desativar' : 'ativar'}`
+      const endpoint = `${API_BASE_URL}/api/tipos-cotacao-loja/${tipo.id}/${tipo.ativo ? 'desativar' : 'ativar'}`
       const response = await fetch(endpoint, {
         method: 'PATCH',
         headers: {

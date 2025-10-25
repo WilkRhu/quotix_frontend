@@ -6,18 +6,20 @@ import DashboardLayout from '../../components/DashboardLayout'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { Role } from '../../types/auth'
 import { API_BASE_URL } from '../../lib/api'
+import { useAuth } from '../../stories/authStore'
 
 export default function Historico() {
+  const { token } = useAuth()
   const [cotacoes, setCotacoes] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     carregarHistorico()
-  }, [])
+  }, [token])
 
   const carregarHistorico = async () => {
+    if (!token) return
     try {
-      const token = localStorage.getItem('token')
       const response = await axios.get(`${API_BASE_URL}/ofertas/historico`, {
         headers: {
           Authorization: `Bearer ${token}`

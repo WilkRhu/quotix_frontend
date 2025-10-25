@@ -44,7 +44,7 @@ export default function GestaoUsuariosLojistas() {
     if (!token) return
     try {
       setCarregando(true)
-      const response = await axios.get(`${API_BASE_URL}/users/lojistas`, {
+      const response = await axios.get(`${API_BASE_URL}/api/users/lojistas`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setUsuarios(response.data)
@@ -75,7 +75,7 @@ export default function GestaoUsuariosLojistas() {
 
     try {
       setSubmetendo(true)
-      await axios.post(`${API_BASE_URL}/users`, form, {
+      await axios.post(`${API_BASE_URL}/api/users`, form, {
         headers: { Authorization: `Bearer ${token}` },
       })
       showToast('Usuário criado com sucesso!', 'success')

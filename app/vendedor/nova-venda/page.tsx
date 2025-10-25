@@ -264,7 +264,7 @@ export default function NovaVenda() {
     try {
       // Por enquanto, vamos buscar todos os clientes
       // TODO: implementar endpoint para buscar clientes por vendedor/loja
-      const response = await axios.get(`${API_BASE_URL}/users/clientes`, {
+      const response = await axios.get(`${API_BASE_URL}/api/users/clientes`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setClientes(Array.isArray(response.data) ? response.data : [])

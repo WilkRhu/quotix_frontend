@@ -30,7 +30,7 @@ interface Vendedor {
 }
 
 export default function VendedoresLojista() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const { showToast } = useToast()
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
   const [showModal, setShowModal] = useState(false)
@@ -58,10 +58,9 @@ export default function VendedoresLojista() {
 
   useEffect(() => {
     loadVendedores()
-  }, [])
+  }, [token])
 
   const loadVendedores = async () => {
-    const token = localStorage.getItem('token')
     if (!token) {
       showToast('Você precisa estar logado para acessar esta página', 'error')
       return
@@ -141,7 +140,6 @@ export default function VendedoresLojista() {
     e.preventDefault()
     setLoading(true)
 
-    const token = localStorage.getItem('token')
     if (!token) {
       showToast('Você precisa estar logado para realizar esta ação', 'error')
       setLoading(false)
@@ -234,9 +232,9 @@ export default function VendedoresLojista() {
     }
   }
 
-  const handleEditar = (vendedor: Vendedor) => {
+  const handleEditar = (vendedor: any) => {
     setEditandoVendedor(vendedor)
-    setFotoPreview(vendedor.foto ? `${API_BASE_URL}/uploads/vendedores/fotos/${vendedor.foto}` : null)
+    setFotoPreview(vendedor.foto ? `${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}` : null)
     setForm({
       nome: vendedor.nome,
       email: vendedor.email,
@@ -258,7 +256,6 @@ export default function VendedoresLojista() {
 
   const handleDesativar = async (id: string) => {
     if (confirm('Deseja realmente desativar este vendedor?')) {
-      const token = localStorage.getItem('token')
       if (!token) {
         showToast('Você precisa estar logado para realizar esta ação', 'error')
         return
@@ -279,7 +276,6 @@ export default function VendedoresLojista() {
 
   const handleAtivar = async (id: string) => {
     if (confirm('Deseja realmente ativar este vendedor?')) {
-      const token = localStorage.getItem('token')
       if (!token) {
         showToast('Você precisa estar logado para realizar esta ação', 'error')
         return
@@ -364,11 +360,11 @@ export default function VendedoresLojista() {
                         <tr key={vendedor.id}>
                           <td>
                             {vendedor.foto ? (
-                              <img
-                                src={`${API_BASE_URL}/uploads/vendedores/fotos/${vendedor.foto}`}
+                              <img 
+                                src={`${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}`}
                                 alt="Foto"
                                 className="rounded-circle"
-                                style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                style={{ width: '50px', height: '50px', objectFit: 'cover' }}
                               />
                             ) : (
                               <div
