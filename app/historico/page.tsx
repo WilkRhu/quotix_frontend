@@ -20,7 +20,7 @@ export default function Historico() {
   const carregarHistorico = async () => {
     if (!token) return
     try {
-      const response = await axios.get(`${API_BASE_URL}/ofertas/historico`, {
+  const response = await axios.get(`${API_BASE_URL}/api/ofertas/historico`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
