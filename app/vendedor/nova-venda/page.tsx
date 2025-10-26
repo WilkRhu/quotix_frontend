@@ -294,7 +294,7 @@ export default function NovaVenda() {
 
   const buscarVendaPendentePorCliente = async (clienteId: string) => {
     try {
-  const response = await axios.get(`${API_BASE_URL}/api/vendas/cliente/${clienteId}`, {
+      const response = await axios.get(`${API_BASE_URL}/vendas/cliente/${clienteId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
