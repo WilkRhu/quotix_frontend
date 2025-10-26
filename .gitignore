@@ -17,5 +17,4 @@ coverage
 .env.production.local
 *.next
 .next/
-out
-build   
+.next/*
