@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import DashboardLayout from '@/components/DashboardLayout'
-import ProtectedRoute from '@/components/ProtectedRoute'
-import { useAuth } from '@/stories/authStore'
-import { useToast } from '@/stories/toastStore'
+import DashboardLayout from '../../../components/DashboardLayout'
+import ProtectedRoute from '../../../components/ProtectedRoute'
+import { useAuth } from '../../../stories/authStore'
+import { useToast } from '../../../stories/toastStore'
 import { Role } from '../../../types/auth'
-import { formatarMoeda } from '@/lib/formatters'
-import { API_BASE_URL } from '@/lib/api'
+import { formatarMoeda } from '../../../lib/formatters'
+import { API_BASE_URL } from '../../../lib/api'
 
 
 interface Loja {
