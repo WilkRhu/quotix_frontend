@@ -123,7 +123,7 @@ export default function EditarVendaPendente() {
           headers: { Authorization: `Bearer ${token}` }
         })
 
-        const tiposLojaResponse = await axios.get(`${API_BASE_URL}/vendas/vendedor/tipos-cotacao`, {
+        const tiposLojaResponse = await axios.get(`${API_BASE_URL}/api/vendas/vendedor/tipos-cotacao`, {
           headers: { Authorization: `Bearer ${token}` }
         })
 

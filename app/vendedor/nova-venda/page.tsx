@@ -281,7 +281,7 @@ export default function NovaVenda() {
     }
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/vendas/vendedor/tipos-cotacao`, {
+      const response = await axios.get(`${API_BASE_URL}/api/vendas/vendedor/tipos-cotacao`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setTiposCotacao(Array.isArray(response.data) ? response.data : [])

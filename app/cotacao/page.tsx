@@ -130,7 +130,7 @@ export default function Cotacao() {
   const buscarDadosVeiculo = async (tipo: string, marca: string, modelo: string, ano: string) => {
     setLoading(true)
     try {
-      const response = await axios.get(`${API_BASE_URL}/fipe/valor/${tipo}/${marca}/${modelo}/${ano}`)
+  const response = await axios.get(`${API_BASE_URL}/api/fipe/valor/${tipo}/${marca}/${modelo}/${ano}`)
       const dadosVeiculo = {
         ...response.data,
         tipoVeiculo: tipo,

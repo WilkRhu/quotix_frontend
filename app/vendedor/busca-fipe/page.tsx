@@ -9,8 +9,12 @@ import { Role } from '../../../types/auth'
 import { useAuth } from '../../../stories/authStore'
 import { API_BASE_URL } from '../../../lib/api'
 import { useToast } from '../../../stories/toastStore'
+import SelectWithSearch from '../../../components/SelectWithSearch'
 
 export default function BuscaFipe() {
+  const [marcaFiltro, setMarcaFiltro] = useState('')
+  const [modeloFiltro, setModeloFiltro] = useState('')
+  const [anoFiltro, setAnoFiltro] = useState('')
   const { showToast } = useToast()
   const router = useRouter()
   const [formData, setFormData] = useState({
@@ -27,6 +31,18 @@ export default function BuscaFipe() {
   const [veiculoSelecionado, setVeiculoSelecionado] = useState<any>(null)
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    if (e.target.name === 'marcaFiltro') {
+      setMarcaFiltro(e.target.value)
+      return
+    }
+    if (e.target.name === 'modeloFiltro') {
+      setModeloFiltro(e.target.value)
+      return
+    }
+    if (e.target.name === 'anoFiltro') {
+      setAnoFiltro(e.target.value)
+      return
+    }
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
@@ -69,7 +85,7 @@ export default function BuscaFipe() {
   const buscarModelos = async (tipo: string, marca: string) => {
     setLoading(true)
     try {
-      const response = await axios.get(`${API_BASE_URL}/fipe/modelos/${tipo}/${marca}`)
+  const response = await axios.get(`${API_BASE_URL}/api/fipe/modelos/${tipo}/${marca}`)
       setModelos(response.data.modelos)
     } catch (error) {
       console.error('Erro ao buscar modelos:', error)
@@ -82,7 +98,7 @@ export default function BuscaFipe() {
   const buscarAnos = async (tipo: string, marca: string, modelo: string) => {
     setLoading(true)
     try {
-      const response = await axios.get(`${API_BASE_URL}/fipe/anos/${tipo}/${marca}/${modelo}`)
+  const response = await axios.get(`${API_BASE_URL}/api/fipe/anos/${tipo}/${marca}/${modelo}`)
       setAnos(response.data)
     } catch (error) {
       console.error('Erro ao buscar anos:', error)
@@ -95,7 +111,7 @@ export default function BuscaFipe() {
   const buscarDadosVeiculo = async (tipo: string, marca: string, modelo: string, ano: string) => {
     setLoading(true)
     try {
-      const response = await axios.get(`${API_BASE_URL}/fipe/valor/${tipo}/${marca}/${modelo}/${ano}`)
+  const response = await axios.get(`${API_BASE_URL}/api/fipe/valor/${tipo}/${marca}/${modelo}/${ano}`)
       const dadosVeiculo = {
         ...response.data,
         tipoVeiculo: tipo,
@@ -201,21 +217,14 @@ export default function BuscaFipe() {
                       <div className="col-md-6">
                         <div className="form-group">
                           <label className="form-control-label">Marca</label>
-                          <select
-                            className="form-control"
-                            name="marca"
+                          <SelectWithSearch
+                            options={marcas.map((marca: any) => ({ value: marca.codigo, label: marca.nome }))}
                             value={formData.marca}
-                            onChange={handleChange}
+                            onChange={value => handleChange({ target: { name: 'marca', value } } as any)}
+                            placeholder="Selecione a marca"
                             disabled={!formData.tipoVeiculo || loading}
                             required
-                          >
-                            <option value="">Selecione a marca</option>
-                            {marcas.map((marca: any) => (
-                              <option key={marca.codigo} value={marca.codigo}>
-                                {marca.nome}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </div>
                       </div>
                     </div>
@@ -223,41 +232,27 @@ export default function BuscaFipe() {
                       <div className="col-md-6">
                         <div className="form-group">
                           <label className="form-control-label">Modelo</label>
-                          <select
-                            className="form-control"
-                            name="modelo"
+                          <SelectWithSearch
+                            options={modelos.map((modelo: any) => ({ value: modelo.codigo, label: modelo.nome }))}
                             value={formData.modelo}
-                            onChange={handleChange}
+                            onChange={value => handleChange({ target: { name: 'modelo', value } } as any)}
+                            placeholder="Selecione o modelo"
                             disabled={!formData.marca || loading}
                             required
-                          >
-                            <option value="">Selecione o modelo</option>
-                            {modelos.map((modelo: any) => (
-                              <option key={modelo.codigo} value={modelo.codigo}>
-                                {modelo.nome}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </div>
                       </div>
                       <div className="col-md-6">
                         <div className="form-group">
                           <label className="form-control-label">Ano</label>
-                          <select
-                            className="form-control"
-                            name="ano"
+                          <SelectWithSearch
+                            options={anos.map((ano: any) => ({ value: ano.codigo, label: ano.nome }))}
                             value={formData.ano}
-                            onChange={handleChange}
+                            onChange={value => handleChange({ target: { name: 'ano', value } } as any)}
+                            placeholder="Selecione o ano"
                             disabled={!formData.modelo || loading}
                             required
-                          >
-                            <option value="">Selecione o ano</option>
-                            {anos.map((ano: any) => (
-                              <option key={ano.codigo} value={ano.codigo}>
-                                {ano.nome}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </div>
                       </div>
                     </div>

@@ -1,8 +1,8 @@
 {
-  "/lojista/loja/page": "app/lojista/loja/page.js",
   "/lojista/tipos-cotacao/page": "app/lojista/tipos-cotacao/page.js",
-  "/not-found": "app/not-found.js",
   "/vendedor/page": "app/vendedor/page.js",
   "/vendedor/nova-venda/page": "app/vendedor/nova-venda/page.js",
+  "/not-found": "app/not-found.js",
+  "/vendedor/busca-fipe/page": "app/vendedor/busca-fipe/page.js",
   "/login/page": "app/login/page.js"
 }
