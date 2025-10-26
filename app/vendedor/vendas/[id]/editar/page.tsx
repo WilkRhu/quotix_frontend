@@ -119,7 +119,7 @@ export default function EditarVendaPendente() {
           return
         }
 
-        const vendaResponse = await axios.get(`${API_BASE_URL}/vendas/${vendaId}`, {
+        const vendaResponse = await axios.get(`${API_BASE_URL}/api/vendas/${vendaId}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
 
@@ -176,7 +176,7 @@ export default function EditarVendaPendente() {
       }
 
       await axios.patch(
-        `${API_BASE_URL}/vendas/${venda.id}`,
+        `${API_BASE_URL}/api/vendas/${venda.id}`,
         payload,
         {
           headers: {

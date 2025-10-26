@@ -42,6 +42,21 @@ export default function VendasAndamento() {
   const confirmarVenda = async (id: number) => {
     if (!token) return
 
+    const venda = vendas.find(v => v.id === id)
+    if (!venda?.placa || venda.placa.trim() === '') {
+      const params = new URLSearchParams()
+      if (venda?.clienteId) params.append('clienteId', venda.clienteId)
+      if (venda?.clienteTelefone) params.append('telefone', venda.clienteTelefone)
+      if (venda?.tipoVeiculo) params.append('tipoVeiculo', venda.tipoVeiculo)
+      if (venda?.marca) params.append('marca', venda.marca)
+      if (venda?.modelo) params.append('modelo', venda.modelo)
+      if (venda?.ano) params.append('ano', venda.ano)
+      if (venda?.valorVeiculo) params.append('valorVeiculo', venda.valorVeiculo.toString())
+      
+      window.location.href = `/vendedor/nova-venda?${params.toString()}`
+      return
+    }
+
     try {
       setActionLoadingId(id)
       await axios.patch(
