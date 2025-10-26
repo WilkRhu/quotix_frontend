@@ -260,7 +260,7 @@ export default function VendasVendedor() {
       }
 
       await axios.patch(
-        `${API_BASE_URL}/vendas/${id}/${acao}`,
+  `${API_BASE_URL}/api/vendas/${id}/${acao}`,
         {},
         {
           headers: {
