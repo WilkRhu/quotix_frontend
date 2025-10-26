@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuth } from '@/stories/authStore'
 import { useToast } from '@/stories/toastStore'
-import { Role } from '@/types/auth'
+import { Role } from '../../../types/auth'
 import { formatarMoeda } from '@/lib/formatters'
 import { API_BASE_URL } from '@/lib/api'
 
