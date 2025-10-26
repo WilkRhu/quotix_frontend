@@ -1,7 +1,0 @@
-{
-  "/vendedor/busca-fipe/page": "app/vendedor/busca-fipe/page.js",
-  "/vendedor/vendas/page": "app/vendedor/vendas/page.js",
-  "/cliente/painel/page": "app/cliente/painel/page.js",
-  "/cotacao/page": "app/cotacao/page.js",
-  "/page": "app/page.js"
-}
