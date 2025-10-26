@@ -920,7 +920,7 @@ export default function Cadastro() {
         <div className="container">
           <Link className="navbar-brand" href="/">
             <img 
-              src="/assets/img/logomarcafull.png" 
+              src="/img/logomarcafull.png" 
               alt="QUOTIX" 
               style={{ height: '45px' }}
             />
