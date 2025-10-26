@@ -29,10 +29,17 @@ export default function Perfil() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    telefone: '',
+    endereco: '',
+    cidade: '',
+    estado: '',
+    cep: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   })
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -79,7 +86,12 @@ export default function Perfil() {
       setFormData(prev => ({
         ...prev,
         name: user.name,
-        email: user.email
+        email: user.email,
+        telefone: user.telefone || '',
+        endereco: user.endereco || '',
+        cidade: user.cidade || '',
+        estado: user.estado || '',
+        cep: user.cep || ''
       }))
     }
   }, [user])
@@ -198,10 +210,71 @@ export default function Perfil() {
   const usuarioEmail = user?.email || ''
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
+    const { name, value } = e.target
+    
+    if (name === 'telefone') {
+      const masked = value
+        .replace(/\D/g, '')
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{5})(\d)/, '$1-$2')
+        .substring(0, 15)
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: masked
+      }))
+    } else if (name === 'cep') {
+      const masked = value
+        .replace(/\D/g, '')
+        .replace(/(\d{5})(\d)/, '$1-$2')
+        .substring(0, 9)
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: masked
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
+  }
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0])
+    }
+  }
+  
+  const handleUploadPhoto = async () => {
+    if (!selectedFile) return
+    
+    setUploading(true)
+    try {
+      const formDataUpload = new FormData()
+      formDataUpload.append('foto', selectedFile)
+      
+      const response = await fetch(`${API_BASE_URL}/api/users/${user?.id}/foto`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formDataUpload
+      })
+      
+      if (!response.ok) {
+        throw new Error('Erro ao fazer upload da foto')
+      }
+      
+      setMessage('Foto atualizada com sucesso!')
+      setSelectedFile(null)
+      window.location.reload()
+    } catch (error) {
+      setError('Erro ao fazer upload da foto')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,7 +286,12 @@ export default function Perfil() {
     try {
       const updateData: any = {
         name: formData.name,
-        email: formData.email
+        email: formData.email,
+        telefone: formData.telefone,
+        endereco: formData.endereco,
+        cidade: formData.cidade,
+        estado: formData.estado,
+        cep: formData.cep
       }
 
       // Se está alterando senha, inclui no payload
@@ -324,7 +402,130 @@ export default function Perfil() {
                           />
                         </div>
                       </div>
+                      <div className="col-md-6">
+                        <div className="form-group">
+                          <label className="form-control-label">Telefone</label>
+                          <input 
+                            className="form-control" 
+                            type="tel" 
+                            name="telefone"
+                            value={formData.telefone}
+                            onChange={handleChange}
+                            placeholder="(11) 99999-9999"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="form-group">
+                          <label className="form-control-label">CEP</label>
+                          <input 
+                            className="form-control" 
+                            type="text" 
+                            name="cep"
+                            value={formData.cep}
+                            onChange={handleChange}
+                            placeholder="12345-678"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-12">
+                        <div className="form-group">
+                          <label className="form-control-label">Endereço</label>
+                          <input 
+                            className="form-control" 
+                            type="text" 
+                            name="endereco"
+                            value={formData.endereco}
+                            onChange={handleChange}
+                            placeholder="Rua, número, complemento"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="form-group">
+                          <label className="form-control-label">Cidade</label>
+                          <input 
+                            className="form-control" 
+                            type="text" 
+                            name="cidade"
+                            value={formData.cidade}
+                            onChange={handleChange}
+                          />
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="form-group">
+                          <label className="form-control-label">Estado</label>
+                          <select 
+                            className="form-control" 
+                            name="estado"
+                            value={formData.estado}
+                            onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value }))}
+                          >
+                            <option value="">Selecione o estado</option>
+                            <option value="AC">Acre</option>
+                            <option value="AL">Alagoas</option>
+                            <option value="AP">Amapá</option>
+                            <option value="AM">Amazonas</option>
+                            <option value="BA">Bahia</option>
+                            <option value="CE">Ceará</option>
+                            <option value="DF">Distrito Federal</option>
+                            <option value="ES">Espírito Santo</option>
+                            <option value="GO">Goiás</option>
+                            <option value="MA">Maranhão</option>
+                            <option value="MT">Mato Grosso</option>
+                            <option value="MS">Mato Grosso do Sul</option>
+                            <option value="MG">Minas Gerais</option>
+                            <option value="PA">Pará</option>
+                            <option value="PB">Paraíba</option>
+                            <option value="PR">Paraná</option>
+                            <option value="PE">Pernambuco</option>
+                            <option value="PI">Piauí</option>
+                            <option value="RJ">Rio de Janeiro</option>
+                            <option value="RN">Rio Grande do Norte</option>
+                            <option value="RS">Rio Grande do Sul</option>
+                            <option value="RO">Rondônia</option>
+                            <option value="RR">Roraima</option>
+                            <option value="SC">Santa Catarina</option>
+                            <option value="SP">São Paulo</option>
+                            <option value="SE">Sergipe</option>
+                            <option value="TO">Tocantins</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
+                    
+                    {user?.role === Role.CLIENT && (
+                      <>
+                        <hr className="horizontal dark" />
+                        <p className="text-uppercase text-sm">Foto do Perfil</p>
+                        <div className="row">
+                          <div className="col-md-12">
+                            <div className="form-group">
+                              <label className="form-control-label">Selecionar Foto</label>
+                              <input 
+                                className="form-control" 
+                                type="file" 
+                                accept="image/*"
+                                onChange={handleFileChange}
+                              />
+                              {selectedFile && (
+                                <div className="mt-2">
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-info btn-sm"
+                                    onClick={handleUploadPhoto}
+                                    disabled={uploading}
+                                  >
+                                    {uploading ? 'Enviando...' : 'Enviar Foto'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                     <hr className="horizontal dark" />
                     <p className="text-uppercase text-sm">Alterar Senha</p>
                     <div className="row">
@@ -554,6 +755,26 @@ export default function Perfil() {
                           '—'
                         )}
                       </div>
+                      {user?.telefone && (
+                        <div className="col-12 mb-2">
+                          <strong>Telefone:</strong> {user.telefone}
+                        </div>
+                      )}
+                      {user?.endereco && (
+                        <div className="col-12 mb-2">
+                          <strong>Endereço:</strong> {user.endereco}
+                        </div>
+                      )}
+                      {(user?.cidade || user?.estado) && (
+                        <div className="col-12 mb-2">
+                          <strong>Cidade/Estado:</strong> {user?.cidade && user?.estado ? `${user.cidade}/${user.estado}` : user?.cidade || user?.estado}
+                        </div>
+                      )}
+                      {user?.cep && (
+                        <div className="col-12 mb-2">
+                          <strong>CEP:</strong> {user.cep}
+                        </div>
+                      )}
                       <div className="col-12 mb-2">
                         <strong>Função:</strong> {translateRole(user?.role)}
                       </div>

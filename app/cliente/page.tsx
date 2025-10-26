@@ -1,11 +1,12 @@
 'use client'
 
-import Hero from '../components/Landing/Hero'
-import Features from '../components/Landing/Features'
-import PricingCards from '../components/Landing/PricingCards'
-import Footer from '../components/Landing/Footer'
+import ClientHero from '../../components/Landing/ClientHero'
+import HowItWorks from '../../components/Landing/HowItWorks'
+import ClientBenefits from '../../components/Landing/ClientBenefits'
+import ClientSignup from '../../components/Landing/ClientSignup'
+import Footer from '../../components/Landing/Footer'
 
-export default function Home() {
+export default function ClientePage() {
   return (
     <div>
       <style>{`
@@ -88,18 +89,6 @@ export default function Home() {
         .brand-premium:hover {
           transform: scale(1.05);
         }
-
-        .brand-icon {
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 0.8rem;
-        }
       `}</style>
 
       <nav className="navbar navbar-expand-lg navbar-premium sticky-top">
@@ -117,18 +106,23 @@ export default function Home() {
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav ms-auto align-items-lg-center gap-1">
               <li className="nav-item">
-                <a className="nav-link nav-link-premium" href="#services">
-                  <i className="fas fa-sparkles me-2" style={{ color: '#667eea' }}></i>Recursos
+                <a className="nav-link nav-link-premium" href="#como-funciona">
+                  <i className="fas fa-info-circle me-2" style={{ color: '#667eea' }}></i>Como Funciona
                 </a>
               </li>
               <li className="nav-item">
-                <a className="nav-link nav-link-premium" href="#pricing">
-                  <i className="fas fa-tag me-2" style={{ color: '#667eea' }}></i>Preços
+                <a className="nav-link nav-link-premium" href="#beneficios">
+                  <i className="fas fa-shield-alt me-2" style={{ color: '#667eea' }}></i>Benefícios
                 </a>
               </li>
               <li className="nav-item">
-                <a className="nav-link nav-link-premium" href="/clientes">
-                  <i className="fas fa-user me-2" style={{ color: '#667eea' }}></i>Para Clientes
+                <a className="nav-link nav-link-premium" href="#cadastro-cliente">
+                  <i className="fas fa-user-plus me-2" style={{ color: '#667eea' }}></i>Cadastre-se
+                </a>
+              </li>
+              <li className="nav-item">
+                <a className="nav-link nav-link-premium" href="/">
+                  <i className="fas fa-store me-2" style={{ color: '#667eea' }}></i>Para Lojistas
                 </a>
               </li>
               <li className="nav-item ms-lg-3">
@@ -137,8 +131,8 @@ export default function Home() {
                 </a>
               </li>
               <li className="nav-item ms-lg-2">
-                <a className="nav-link btn btn-signup-premium px-4 py-2 rounded-lg" href="/cadastro">
-                  <i className="fas fa-rocket me-2"></i>Começar Grátis
+                <a className="nav-link btn btn-signup-premium px-4 py-2 rounded-lg" href="#cadastro-cliente">
+                  <i className="fas fa-user-plus me-2"></i>Criar Conta
                 </a>
               </li>
             </ul>
@@ -146,9 +140,10 @@ export default function Home() {
         </div>
       </nav>
       
-      <Hero />
-      <Features />
-      <PricingCards />
+      <ClientHero />
+      <HowItWorks />
+      <ClientBenefits />
+      <ClientSignup />
       <Footer />
     </div>
   )

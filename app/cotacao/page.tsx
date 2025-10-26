@@ -208,10 +208,15 @@ export default function Cotacao() {
     
     setOfertaSelecionada(ofertaComLoja)
     
-    // Verificar se o cliente precisa informar telefone
-    // Como o telefone não vem no contexto do usuário, assumimos que precisa informar
-    setClientePrecisaTelefone(true)
-    setClienteTelefone('')
+    // Verificar se o cliente já tem telefone cadastrado
+    const telefoneUsuario = user?.telefone || ''
+    if (telefoneUsuario) {
+      setClienteTelefone(formatarTelefone(telefoneUsuario))
+      setClientePrecisaTelefone(false)
+    } else {
+      setClienteTelefone('')
+      setClientePrecisaTelefone(true)
+    }
     
     setShowModalContratacao(true)
   }
@@ -528,34 +533,37 @@ export default function Cotacao() {
                   </div>
                 </div>
                 
-                {clientePrecisaTelefone && (
-                  <div className="row mt-3">
-                    <div className="col-12">
+                <div className="row mt-3">
+                  <div className="col-12">
+                    {clientePrecisaTelefone && (
                       <div className="alert alert-warning">
                         <i className="fas fa-exclamation-triangle me-2"></i>
                         <strong>Telefone obrigatório:</strong> Para prosseguir com a cotação, precisamos do seu telefone para contato.
                       </div>
-                      <div className="form-group">
-                        <label htmlFor="clienteTelefone" className="form-control-label">
-                          Seu Telefone <span className="text-danger">*</span>
-                        </label>
-                        <input
-                          type="tel"
-                          className="form-control"
-                          id="clienteTelefone"
-                          value={clienteTelefone}
-                          onChange={handleTelefoneChange}
-                          placeholder="(11) 99999-9999"
-                          required={clientePrecisaTelefone}
-                          maxLength={15}
-                        />
-                        <small className="form-text text-muted">
-                          Este telefone será usado pelo vendedor para entrar em contato sobre sua cotação.
-                        </small>
-                      </div>
+                    )}
+                    <div className="form-group">
+                      <label htmlFor="clienteTelefone" className="form-control-label">
+                        Seu Telefone {clientePrecisaTelefone && <span className="text-danger">*</span>}
+                      </label>
+                      <input
+                        type="tel"
+                        className="form-control"
+                        id="clienteTelefone"
+                        value={clienteTelefone}
+                        onChange={handleTelefoneChange}
+                        placeholder="(11) 99999-9999"
+                        required={clientePrecisaTelefone}
+                        maxLength={15}
+                        disabled={!clientePrecisaTelefone}
+                      />
+                      <small className="form-text text-muted">
+                        {clientePrecisaTelefone 
+                          ? 'Este telefone será usado pelo vendedor para entrar em contato sobre sua cotação.'
+                          : 'Telefone cadastrado. O vendedor entrará em contato por este número.'}
+                      </small>
                     </div>
                   </div>
-                )}
+                </div>
                 
                 <div className="alert alert-info mt-3">
                   <i className="fas fa-info-circle me-2"></i>

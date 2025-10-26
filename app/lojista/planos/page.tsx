@@ -7,6 +7,7 @@ import { Role } from '../../../types/auth'
 import { API_BASE_URL } from '../../../lib/api'
 import axios from 'axios'
 import { useAuth } from '@/stories/authStore'
+import React from 'react'
 import { useToast } from '@/stories/toastStore'
 
 // Componente Cronômetro Regressivo
@@ -80,6 +81,7 @@ type Assinatura = {
   trialVencimentoEm?: string
   dataInicio: string
   dataVencimento?: string
+  status?: string
 }
 
 type Loja = {
@@ -90,64 +92,84 @@ type Loja = {
 }
 
 export default function PlanoLojista() {
-  const { token } = useAuth()
-  const { showToast } = useToast()
+  const [formaPagamento, setFormaPagamento] = useState('cartao')
+  const [parcelas, setParcelas] = useState(1)
+  const [showModal, setShowModal] = useState(false)
+  const [modalTipo, setModalTipo] = useState<'upgrade' | 'downgrade' | 'mesmo' | null>(null)
+  const [planoNovo, setPlanoNovo] = useState<Plano | null>(null)
+  const [loja, setLoja] = useState<Loja | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [loja, setLoja] = useState<Loja | null>(null)
   const [planos, setPlanos] = useState<Plano[]>([])
   const [planoSelecionado, setPlanoSelecionado] = useState<string>('')
 
+  const { token } = useAuth()
+  const { showToast } = useToast()
+
+  // Verifica se pode alterar plano
+  const podeAlterarPlano = useMemo(() => {
+    if (!loja) return false
+    
+    // Se não tem plano (gratuito), pode escolher qualquer plano
+    if (!loja.plano) return true
+    
+    // Se é trial, pode alterar
+    if (loja.plano.isTrial) return true
+    
+    // Se tem plano pago, verifica se é upgrade
+    if (loja.plano && planoSelecionado) {
+      const planoNovo = planos.find(p => p.id === planoSelecionado)
+      if (planoNovo) {
+        const precoNovo = Number(planoNovo.precoMensal ?? 0)
+        const precoAtual = Number(loja.plano.precoMensal ?? 0)
+        // Permite se for upgrade ou mesmo valor
+        if (precoNovo >= precoAtual) return true
+      }
+    }
+    
+    // Verifica se assinatura está vencida
+    if (loja.assinatura) {
+      const status = loja.assinatura.status
+      const vencimento = loja.assinatura.dataVencimento
+      if (status === 'vencida') return true
+      if (vencimento) {
+        const agora = new Date()
+        const venc = new Date(vencimento)
+        if (venc < agora) return true
+      }
+    }
+    
+    return false
+  }, [loja, planoSelecionado, planos])
+
   const diasRestantesTrialAtual = useMemo(() => {
-    if (!loja?.assinatura) {
-      console.log('[DEBUG] Sem assinatura')
-      return 0
-    }
-    
-    console.log('[DEBUG] Assinatura:', loja.assinatura)
-    console.log('[DEBUG] Plano:', loja.plano)
-    
+    if (!loja?.assinatura) return 0
+
     const ehTrial = !loja.plano || loja.plano.isTrial
-    console.log('[DEBUG] É trial?:', ehTrial)
-    
-    if (!ehTrial && !loja.assinatura.isTrialAtivo) {
-      console.log('[DEBUG] Não é trial e trial não ativo')
-      return 0
-    }
-    
-    // Se temos trialVencimentoEm, usar isso
+    if (!ehTrial && !loja.assinatura.isTrialAtivo) return 0
+
     if (loja.assinatura.trialVencimentoEm) {
       const agora = new Date()
       agora.setHours(0, 0, 0, 0)
-      
       const vencimento = new Date(loja.assinatura.trialVencimentoEm)
       vencimento.setHours(0, 0, 0, 0)
-      
       const diff = vencimento.getTime() - agora.getTime()
       const dias = Math.ceil(diff / (1000 * 60 * 60 * 24))
-      
-      console.log('[DEBUG] Trial com vencimento:', dias, 'dias')
       return Math.max(dias, 0)
     }
-    
-    // Fallback: se temos dataInicio, calcular 7 dias a partir dela
+
     if (loja.assinatura.dataInicio) {
       const inicio = new Date(loja.assinatura.dataInicio)
       const vencimento = new Date(inicio)
       vencimento.setDate(vencimento.getDate() + 7)
       vencimento.setHours(0, 0, 0, 0)
-      
       const agora = new Date()
       agora.setHours(0, 0, 0, 0)
-      
       const diff = vencimento.getTime() - agora.getTime()
       const dias = Math.ceil(diff / (1000 * 60 * 60 * 24))
-      
-      console.log('[DEBUG] Trial com fallback de dataInicio:', dias, 'dias')
       return Math.max(dias, 0)
     }
-    
-    console.log('[DEBUG] Nenhuma data disponível')
+
     return 0
   }, [loja])
 
@@ -165,8 +187,6 @@ export default function PlanoLojista() {
         axios.get(`${API_BASE_URL}/api/lojas/me`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_BASE_URL}/api/planos`, { headers: { Authorization: `Bearer ${token}` } }),
       ])
-      console.log('[DEBUG] Resposta da loja:', lojaRes.data)
-      console.log('[DEBUG] Assinatura retornada:', lojaRes.data?.assinatura)
       setLoja(lojaRes.data)
       setPlanos(planosRes.data.filter((p: Plano) => p.status === 'ativo'))
       if (lojaRes.data?.plano?.id) setPlanoSelecionado(lojaRes.data.plano.id)
@@ -182,16 +202,39 @@ export default function PlanoLojista() {
     if (token) carregar()
   }, [token])
 
-  const handleAlterarPlano = async () => {
+  const handleAlterarPlano = () => {
     if (!planoSelecionado) return showToast('Selecione um plano', 'warning')
+    const novo = planos.find(p => p.id === planoSelecionado)
+    if (!novo) return showToast('Plano inválido', 'error')
+    
+    const precoNovo = Number(novo.precoMensal ?? 0)
+    const precoAtual = Number(loja?.plano?.precoMensal ?? 0)
+    
+    // Se tem plano atual e não é gratuito/trial, só permite upgrade
+    if (loja?.plano && !loja.plano.isTrial && precoAtual > 0) {
+      if (precoNovo <= precoAtual) {
+        return showToast('Só é possível fazer upgrade para planos mais caros', 'warning')
+      }
+    }
+    
+    setPlanoNovo(novo)
+    let tipo: 'upgrade' | 'downgrade' | 'mesmo' = 'mesmo'
+    if (precoNovo > precoAtual) tipo = 'upgrade'
+    else if (precoNovo < precoAtual) tipo = 'downgrade'
+    setModalTipo(tipo)
+    setShowModal(true)
+  }
+
+  const confirmarPagamento = async () => {
     setSaving(true)
     try {
       await axios.post(
         `${API_BASE_URL}/api/lojas/me/plano`,
-        { planoId: planoSelecionado },
+        { planoId: planoNovo?.id },
         { headers: { Authorization: `Bearer ${token}` } }
       )
       showToast('Plano alterado com sucesso!', 'success')
+      setShowModal(false)
       await carregar()
     } catch (e) {
       console.error('Erro ao alterar plano', e)
@@ -219,7 +262,7 @@ export default function PlanoLojista() {
     <ProtectedRoute requiredRoles={[Role.LOJISTA, Role.LOGIST]}>
       <DashboardLayout title="Planos da Loja">
         <div className="row">
-          {/* Card do Plano Atual - Em Destaque */}
+          {/* Card do Plano Atual */}
           <div className="col-12 mb-4">
             <div className="card border-0 shadow-lg bg-gradient-primary">
               <div className="card-body text-white">
@@ -293,26 +336,33 @@ export default function PlanoLojista() {
                     const anualNum = Number(p.precoAnual ?? 0)
                     const isAtual = loja?.plano?.id === p.id
                     const isSelecionado = planoSelecionado === p.id
-
-                    const mensalExib = mensalNum > 0 ? mensalNum : 0
-                    const anualExib = anualNum > 0 ? anualNum : 0
+                    
+                    // Verifica se o plano pode ser selecionado
+                    const precoAtual = Number(loja?.plano?.precoMensal ?? 0)
+                    const podeSelecionar = !loja?.plano || // Sem plano (gratuito)
+                                         loja.plano.isTrial || // Trial
+                                         mensalNum > precoAtual || // Upgrade
+                                         isAtual // Plano atual
 
                     return (
                       <div className="col-md-6 col-lg-4" key={p.id}>
                         <div
                           role="button"
                           className={`card h-100 transition-all ${
-                            isSelecionado
+                            !podeSelecionar ? 'opacity-50' : ''
+                          } ${isSelecionado
                               ? 'border-2 border-primary shadow-lg'
                               : isAtual
-                              ? 'border-2 border-success shadow'
-                              : 'border-1 border-light shadow-sm'
-                          } ${isAtual ? 'bg-light' : ''}`}
-                          onClick={() => setPlanoSelecionado(p.id)}
-                          style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
+                                ? 'border-2 border-success shadow'
+                                : 'border-1 border-light shadow-sm'
+                            } ${isAtual ? 'bg-light' : ''}`}
+                          onClick={() => podeSelecionar && setPlanoSelecionado(p.id)}
+                          style={{ 
+                            cursor: podeSelecionar ? 'pointer' : 'not-allowed', 
+                            transition: 'all 0.3s ease' 
+                          }}
                         >
                           <div className="card-body d-flex flex-column">
-                            {/* Badges */}
                             <div className="d-flex gap-2 mb-2 flex-wrap">
                               {isAtual && (
                                 <span className="badge bg-success">
@@ -324,33 +374,36 @@ export default function PlanoLojista() {
                                   <i className="fas fa-hand-point-left me-1"></i>Selecionado
                                 </span>
                               )}
-                              {mensalExib === 0 && (
+                              {mensalNum === 0 && (
                                 <span className="badge bg-success">
                                   <i className="fas fa-gift me-1"></i>Gratuito
                                 </span>
                               )}
+                              {!podeSelecionar && !isAtual && (
+                                <span className="badge bg-secondary">
+                                  <i className="fas fa-lock me-1"></i>Indisponível
+                                </span>
+                              )}
                             </div>
 
-                            {/* Nome e Descrição */}
                             <h6 className="fw-bold mb-1">{p.nome}</h6>
                             {p.descricao && (
                               <p className="text-muted small mb-3 flex-grow-1">{p.descricao}</p>
                             )}
 
-                            {/* Preços */}
                             <div className="mt-auto">
-                              {mensalExib > 0 ? (
+                              {mensalNum > 0 ? (
                                 <>
                                   <div className="mb-2">
                                     <div className="fw-bold text-primary fs-5">
-                                      R$ {mensalExib.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                      R$ {mensalNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </div>
                                     <small className="text-muted">/mês</small>
                                   </div>
-                                  {anualExib > 0 && (
+                                  {anualNum > 0 && (
                                     <div className="small text-secondary">
                                       <i className="fas fa-calendar me-1"></i>
-                                      R$ {anualExib.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/ano
+                                      R$ {anualNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/ano
                                     </div>
                                   )}
                                 </>
@@ -362,7 +415,6 @@ export default function PlanoLojista() {
                             </div>
                           </div>
 
-                          {/* Hover Effect Indicator */}
                           {isSelecionado && (
                             <div className="card-footer bg-primary bg-opacity-10 border-0 text-center">
                               <small className="text-primary fw-bold">Clique no botão abaixo para confirmar</small>
@@ -389,20 +441,168 @@ export default function PlanoLojista() {
                         <button
                           className="btn btn-primary"
                           onClick={handleAlterarPlano}
-                          disabled={saving}
+                          disabled={saving || !podeAlterarPlano}
                         >
-                          {saving ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                              Processando...
-                            </>
-                          ) : (
-                            <>
-                              <i className="fas fa-check me-2"></i>
-                              Confirmar Plano
-                            </>
-                          )}
+                          <i className="fas fa-check me-2"></i>
+                          Confirmar Plano
                         </button>
+                        
+                        {/* Modal de Pagamento */}
+                        {showModal && planoNovo && (
+                          <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }} tabIndex={-1}>
+                            <div className="modal-dialog modal-lg">
+                              <div className="modal-content">
+                                <div className="modal-header">
+                                  <h5 className="modal-title">Pagamento para troca de plano</h5>
+                                  <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                                </div>
+                                <div className="modal-body">
+                                  <p>Você está trocando para o plano <b>{planoNovo.nome}</b>.</p>
+                                  {modalTipo === 'upgrade' && (
+                                    <div className="alert alert-success">
+                                      <i className="fas fa-arrow-up me-2"></i>
+                                      <b>Upgrade:</b> O novo plano é mais caro que o atual.
+                                    </div>
+                                  )}
+                                  {modalTipo === 'downgrade' && (
+                                    <div className="alert alert-warning">
+                                      <i className="fas fa-arrow-down me-2"></i>
+                                      <b>Downgrade:</b> O novo plano é mais barato que o atual.
+                                    </div>
+                                  )}
+                                  {modalTipo === 'mesmo' && (
+                                    <div className="alert alert-info">
+                                      <i className="fas fa-exchange-alt me-2"></i>
+                                      O valor do plano não mudou.
+                                    </div>
+                                  )}
+                                  <div className="mt-3">
+                                    <b>Valor mensal:</b> R$ {Number(planoNovo.precoMensal ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    {formaPagamento === 'cartao' && parcelas > 1 && (
+                                      <div className="mt-1 text-muted small">
+                                        Total parcelado: {parcelas}x de R$ {(Number(planoNovo.precoMensal ?? 0) / parcelas).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="mt-4">
+                                    <label className="form-label fw-bold">Forma de pagamento</label>
+                                    <select className="form-select" value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)}>
+                                      <option value="cartao">Cartão de Crédito</option>
+                                      <option value="boleto">Boleto</option>
+                                      <option value="pix">Pix</option>
+                                    </select>
+                                  </div>
+                                  
+                                  {formaPagamento === 'cartao' && (
+                                    <div className="mt-4 row g-2">
+                                      <div className="col-md-6">
+                                        <label className="form-label">Número do cartão</label>
+                                        <input type="text" className="form-control" placeholder="0000 0000 0000 0000" maxLength={19} />
+                                      </div>
+                                      <div className="col-md-3">
+                                        <label className="form-label">Validade</label>
+                                        <input type="text" className="form-control" placeholder="MM/AA" maxLength={5} />
+                                      </div>
+                                      <div className="col-md-3">
+                                        <label className="form-label">CVV</label>
+                                        <input type="text" className="form-control" placeholder="CVV" maxLength={4} />
+                                      </div>
+                                      <div className="col-12">
+                                        <label className="form-label">Nome impresso no cartão</label>
+                                        <input type="text" className="form-control" placeholder="Nome completo" />
+                                      </div>
+                                      <div className="col-md-6">
+                                        <label className="form-label">Parcelas</label>
+                                        <select className="form-select" value={parcelas} onChange={e => setParcelas(Number(e.target.value))}>
+                                          <option value={1}>1x de R$ {Number(planoNovo.precoMensal ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (à vista)</option>
+                                          {[2,3,4,5,6,7,8,9,10,11,12].map(p => (
+                                            <option key={p} value={p}>
+                                              {p}x de R$ {(Number(planoNovo.precoMensal ?? 0) / p).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {formaPagamento === 'pix' && (
+                                    <div className="mt-4">
+                                      <label className="form-label">Pix copia e cola</label>
+                                      <div className="bg-light p-3 rounded border d-flex align-items-center gap-2">
+                                        <span style={{ fontFamily: 'monospace', wordBreak: 'break-all', fontSize: '0.9rem', flex: 1 }}>
+                                          {`00020126580014BR.GOV.BCB.PIX0136fakepix${planoNovo.id}520400005303986540${Number(planoNovo.precoMensal ?? 0).toFixed(2).replace('.', '')}5802BR5920Quotix Pagamentos6009SAO PAULO62070503***`}
+                                        </span>
+                                        <button 
+                                          className="btn btn-outline-primary btn-sm" 
+                                          type="button" 
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(`00020126580014BR.GOV.BCB.PIX0136fakepix${planoNovo.id}520400005303986540${Number(planoNovo.precoMensal ?? 0).toFixed(2).replace('.', '')}5802BR5920Quotix Pagamentos6009SAO PAULO62070503***`)
+                                            showToast('Código PIX copiado!', 'success')
+                                          }}
+                                        >
+                                          <i className="fas fa-copy"></i>
+                                        </button>
+                                      </div>
+                                      <small className="text-muted">Use este código no seu app bancário para simular o pagamento.</small>
+                                    </div>
+                                  )}
+                                  
+                                  {formaPagamento === 'boleto' && (
+                                    <div className="mt-4">
+                                      <label className="form-label">Linha digitável do boleto</label>
+                                      <div className="bg-light p-3 rounded border d-flex align-items-center gap-2">
+                                        <span style={{ fontFamily: 'monospace', fontSize: '0.95rem', letterSpacing: '1px', flex: 1 }}>
+                                          {`34191.09008 12345.678901 23456.789012 3 000000${Number(planoNovo.precoMensal ?? 0).toFixed(2).replace('.', '')}`}
+                                        </span>
+                                        <button 
+                                          className="btn btn-outline-primary btn-sm" 
+                                          type="button" 
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(`34191.09008 12345.678901 23456.789012 3 000000${Number(planoNovo.precoMensal ?? 0).toFixed(2).replace('.', '')}`)
+                                            showToast('Linha digitável copiada!', 'success')
+                                          }}
+                                        >
+                                          <i className="fas fa-copy"></i>
+                                        </button>
+                                      </div>
+                                      <small className="text-muted">Use esta linha digitável para simular o pagamento do boleto.</small>
+                                      <div className="mt-3 p-3 bg-info bg-opacity-10 rounded">
+                                        <div className="d-flex align-items-center gap-2 mb-2">
+                                          <i className="fas fa-info-circle text-info"></i>
+                                          <strong>Instruções do Boleto:</strong>
+                                        </div>
+                                        <ul className="mb-0 small">
+                                          <li>Vencimento: {new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}</li>
+                                          <li>Valor: R$ {Number(planoNovo.precoMensal ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</li>
+                                          <li>Pagável em qualquer banco ou lotérica</li>
+                                        </ul>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="modal-footer">
+                                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={saving}>
+                                    Cancelar
+                                  </button>
+                                  <button type="button" className="btn btn-primary" onClick={confirmarPagamento} disabled={saving}>
+                                    {saving ? (
+                                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    ) : (
+                                      <i className="fas fa-credit-card me-2"></i>
+                                    )}
+                                    Confirmar Pagamento
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {!podeAlterarPlano && planoSelecionado && planoSelecionado !== (loja?.plano?.id || '') && (
+                          <div className="text-danger mt-2">
+                            Só é possível fazer upgrade para planos mais caros ou aguardar o vencimento.
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
