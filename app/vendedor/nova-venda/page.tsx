@@ -585,7 +585,7 @@ export default function NovaVenda() {
       if (editingVendaId) {
         // Atualizar venda existente
         response = await axios.patch(
-          `${API_BASE_URL}/vendas/${editingVendaId}`,
+          `${API_BASE_URL}/api/vendas/${editingVendaId}`,
           payload,
           {
             headers: {
@@ -598,7 +598,7 @@ export default function NovaVenda() {
       } else {
         // Criar nova venda
         response = await axios.post(
-          `${API_BASE_URL}/vendas`,
+          `${API_BASE_URL}/api/vendas`,
           payload,
           {
             headers: {
