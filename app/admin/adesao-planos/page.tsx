@@ -132,13 +132,13 @@ export default function AdesaoPlanos() {
                             className="form-select"
                             value={filtro.planoId}
                             onChange={(e) => setFiltro((p) => ({ ...p, planoId: e.target.value }))}
-                        >
-                            <option value="">Todos os Planos</option>
-                            {planos.map((plano) => (
-                                <option key={plano.id} value={plano.id}>
                                     {plano.nome}
-                                </option>
-                            ))}
+                        import DashboardLayout from '../../../components/DashboardLayout'
+                        import ProtectedRoute from '../../../components/ProtectedRoute'
+                        import { useAuth } from '../../../stories/authStore'
+                        import { useToast } from '../../../stories/toastStore'
+                        import { formatarMoeda } from '../../../lib/formatters'
+                        import { API_BASE_URL } from '../../../lib/api'
                         </select>
                     </div>
                 </div>
