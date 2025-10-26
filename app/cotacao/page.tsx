@@ -256,7 +256,7 @@ export default function Cotacao() {
         clienteTelefone: clientePrecisaTelefone ? limparTelefone(clienteTelefone) : null
       }
 
-      const response = await axios.post(`${API_BASE_URL}/vendas/contratar`, payload, {
+  const response = await axios.post(`${API_BASE_URL}/api/vendas/contratar`, payload, {
         headers: {
           Authorization: `Bearer ${token}`
         }
