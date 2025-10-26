@@ -258,7 +258,7 @@ Os tipos utilizados estão em `/frontend/types/`:
 
 A URL base da API está em `/frontend/lib/api.ts`:
 ```typescript
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://quotix-backend.fly.dev'
 ```
 
 ---
