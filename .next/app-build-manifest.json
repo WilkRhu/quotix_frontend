@@ -115,6 +115,21 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/vendedor/busca-fipe/page.js"
+    ],
+    "/vendedor/vendas/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/vendedor/vendas/page.js"
+    ],
+    "/cliente/painel/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/cliente/painel/page.js"
+    ],
+    "/cotacao/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/cotacao/page.js"
     ]
   }
 }

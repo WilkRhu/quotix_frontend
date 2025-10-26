@@ -94,7 +94,7 @@ export default function Cotacao() {
   const buscarMarcas = async (tipo: string) => {
     setLoading(true)
     try {
-      const response = await axios.get(`${API_BASE_URL}/fipe/marcas/${tipo}`)
+  const response = await axios.get(`${API_BASE_URL}/api/fipe/marcas/${tipo}`)
       setMarcas(response.data)
     } catch (error) {
       console.error('Erro ao buscar marcas:', error)
@@ -106,7 +106,7 @@ export default function Cotacao() {
   const buscarModelos = async (tipo: string, marca: string) => {
     setLoading(true)
     try {
-      const response = await axios.get(`${API_BASE_URL}/fipe/modelos/${tipo}/${marca}`)
+  const response = await axios.get(`${API_BASE_URL}/api/fipe/modelos/${tipo}/${marca}`)
       setModelos(response.data.modelos)
     } catch (error) {
       console.error('Erro ao buscar modelos:', error)
@@ -118,7 +118,7 @@ export default function Cotacao() {
   const buscarAnos = async (tipo: string, marca: string, modelo: string) => {
     setLoading(true)
     try {
-      const response = await axios.get(`${API_BASE_URL}/fipe/anos/${tipo}/${marca}/${modelo}`)
+  const response = await axios.get(`${API_BASE_URL}/api/fipe/anos/${tipo}/${marca}/${modelo}`)
       setAnos(response.data)
     } catch (error) {
       console.error('Erro ao buscar anos:', error)
@@ -178,7 +178,7 @@ export default function Cotacao() {
     e.preventDefault()
     setBuscandoOfertas(true)
     try {
-      const response = await axios.post(`${API_BASE_URL}/ofertas/buscar-por-loja`, {
+  const response = await axios.post(`${API_BASE_URL}/api/ofertas/buscar-por-loja`, {
         veiculo: veiculoSelecionado,
         tipoVeiculo: formData.tipoVeiculo,
         marca: veiculoSelecionado.Marca,

@@ -204,7 +204,7 @@ export default function VendasVendedor() {
 
       console.log('Fazendo requisição para vendas com params:', params);
 
-      const response = await axios.get(`${API_BASE_URL}/vendas/vendedor/vendas`, {
+  const response = await axios.get(`${API_BASE_URL}/api/vendas/vendedor/vendas`, {
         headers: { Authorization: `Bearer ${token}` },
         params,
       });

@@ -137,7 +137,7 @@ export default function PainelCliente() {
       setError('')
 
       try {
-        const response = await fetch(`${API_BASE_URL}/vendas/cliente/${user.id}`, {
+  const response = await fetch(`${API_BASE_URL}/api/vendas/cliente/${user.id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
