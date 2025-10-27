@@ -273,7 +273,7 @@ export default function ClientSignup() {
                 <button
                   type="submit"
                   className="btn btn-primary btn-lg w-100 py-3"
-                  disabled={loading || (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword)}
+                  disabled={loading || Boolean(formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword)}
                 >
                   {loading ? (
                     <>
