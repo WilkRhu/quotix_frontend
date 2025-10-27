@@ -11,6 +11,10 @@ export interface User {
   name: string;
   email: string;
   telefone?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
   role: Role;
   lojaId?: string;
   vendedorId?: string;
