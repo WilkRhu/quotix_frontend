@@ -178,7 +178,7 @@ export default function VendedoresLojista() {
 
       let vendedorId
       if (editandoVendedor) {
-        await axios.post(`${API_BASE_URL}/api/vendedores/${editandoVendedor.id}`, dataToSend, {
+        await axios.patch(`${API_BASE_URL}/api/vendedores/${editandoVendedor.id}`, dataToSend, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -234,7 +234,7 @@ export default function VendedoresLojista() {
 
   const handleEditar = (vendedor: any) => {
     setEditandoVendedor(vendedor)
-    setFotoPreview(vendedor.foto ? `${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}` : null)
+    setFotoPreview(vendedor.foto ? (vendedor.foto.startsWith('http') ? vendedor.foto : `${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}`) : null)
     setForm({
       nome: vendedor.nome,
       email: vendedor.email,
@@ -361,7 +361,7 @@ export default function VendedoresLojista() {
                           <td>
                             {vendedor.foto ? (
                               <img 
-                                src={`${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}`}
+                                src={vendedor.foto.startsWith('http') ? vendedor.foto : `${API_BASE_URL}/api/uploads/vendedores/fotos/${vendedor.foto}`}
                                 alt="Foto"
                                 className="rounded-circle"
                                 style={{ width: '50px', height: '50px', objectFit: 'cover' }}
