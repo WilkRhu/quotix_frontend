@@ -9,6 +9,7 @@ import { useAuth } from '../../../stories/authStore'
 import { API_BASE_URL } from '../../../lib/api'
 import { useToast } from '../../../stories/toastStore'
 import { formatCurrency } from '../../../lib/formatters'
+import { useRouter } from 'next/navigation'
 
 interface Cliente {
   id: string
@@ -32,9 +33,10 @@ interface VendaResumo {
   vendedor?: { nome?: string } | null
 }
 
-export default function ListaClientes() {
+export default function ClientesLojista() {
   const { token, user } = useAuth()
   const { showToast } = useToast()
+  const router = useRouter()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -52,7 +54,7 @@ export default function ListaClientes() {
     }
 
     fetchClientes()
-  }, [token, user?.lojaId, user?.role])
+  }, [token, user?.lojaId])
 
   const fetchClientes = async () => {
     if (!token) {
@@ -72,7 +74,11 @@ export default function ListaClientes() {
         }
       )
       const data: Cliente[] = response.data
-      setClientes(data)
+      const lojaId = user?.lojaId
+      const filtrados = lojaId
+        ? data.filter((cliente) => cliente.lojaId === lojaId)
+        : data
+      setClientes(filtrados)
     } catch (error: any) {
       console.error('Erro ao buscar clientes:', error)
       const errorMessage = error.response?.data?.message || 'Erro ao buscar clientes'
@@ -239,17 +245,25 @@ export default function ListaClientes() {
   }, [clientesOrdenados, searchTerm])
 
   return (
-  <ProtectedRoute requiredRoles={[Role.ADMIN, Role.SELLER, Role.LOGIST, Role.LOJISTA]}>
+    <ProtectedRoute requiredRoles={[Role.LOJISTA, Role.LOGIST]}>
       <DashboardLayout>
         <div className="container-fluid">
           <div className="row">
             <div className="col-12">
               <div className="card shadow">
-                <div className="card-header bg-primary text-white">
+                <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                   <h4 className="card-title mb-0">
                     <i className="fas fa-users me-2"></i>
                     Lista de Clientes
                   </h4>
+                  <button
+                    type="button"
+                    className="btn btn-light btn-sm"
+                    onClick={() => router.push('/lojista/cadastrar-cliente')}
+                  >
+                    <i className="fas fa-plus me-2"></i>
+                    Novo Cliente
+                  </button>
                 </div>
                 <div className="card-body">
                   <div className="row align-items-end mb-4">
@@ -367,12 +381,6 @@ export default function ListaClientes() {
                       <dd className="col-sm-8">{clienteSelecionado.email || '—'}</dd>
                       <dt className="col-sm-4">Criado em</dt>
                       <dd className="col-sm-8">{new Date(clienteSelecionado.createdAt).toLocaleString('pt-BR')}</dd>
-                      {clienteSelecionado.lojaId ? (
-                        <>
-                          <dt className="col-sm-4">Loja</dt>
-                          <dd className="col-sm-8">{clienteSelecionado.lojaId}</dd>
-                        </>
-                      ) : null}
                     </dl>
 
                     <div className="mt-4 pt-3 border-top">

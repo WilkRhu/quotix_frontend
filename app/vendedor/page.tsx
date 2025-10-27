@@ -384,7 +384,7 @@ export default function PerfilVendedor() {
     }
   }, [token])
 
-  const saudacao = 'Dashboard / Vendas';
+  const saudacao = vendedor?.loja?.nome ? `Dashboard / ${vendedor.loja.nome}` : 'Dashboard / Vendas';
 
   const ChartsSkeleton = () => (
     <div className="row mt-4">

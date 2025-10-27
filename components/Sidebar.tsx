@@ -69,6 +69,14 @@ const lojistaMenuItems: MenuItem[] = [
   { href: '/lojista', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
   { href: '/lojista/loja', icon: 'fas fa-store', label: 'Minha Loja' },
   { href: '/lojista/vendedores', icon: 'fas fa-user-tie', label: 'Vendedores' },
+  {
+    label: 'Clientes',
+    icon: 'fas fa-users',
+    submenu: [
+      { href: '/lojista/cadastrar-cliente', label: 'Cadastrar Cliente' },
+      { href: '/lojista/clientes', label: 'Lista de Clientes' }
+    ]
+  },
   { href: '/lojista/tipos-cotacao', icon: 'fas fa-calculator', label: 'Tipos de Cotação' },
   { href: '/lojista/planos', icon: 'fas fa-box', label: 'Planos' },
 ]
@@ -78,6 +86,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const { logout, user, token } = useAuth()
   const [openSubmenus, setOpenSubmenus] = useState<{[key: string]: boolean}>({})
   const [vendasEmAtendimento, setVendasEmAtendimento] = useState(0)
+  const [vendedorLoja, setVendedorLoja] = useState<any>(null)
 
   useEffect(() => {
     if (user?.role === Role.SELLER && token) {
@@ -94,7 +103,23 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           console.error('Erro ao buscar contador:', error)
         }
       }
+      
+      const fetchVendedorLoja = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/vendas/vendedor/perfil`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (response.ok) {
+            const data = await response.json()
+            setVendedorLoja(data)
+          }
+        } catch (error) {
+          console.error('Erro ao buscar perfil vendedor:', error)
+        }
+      }
+      
       fetchContador()
+      fetchVendedorLoja()
       const interval = setInterval(fetchContador, 30000)
       return () => clearInterval(interval)
     }
@@ -150,8 +175,26 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           </button>
         )}
         <Link className="navbar-brand m-0" href="/">
-          <i className="fas fa-shield-alt text-primary me-2"></i>
-          <span className="ms-1 font-weight-bold">Sistema Seguros</span>
+          {user?.role === Role.SELLER && vendedorLoja?.loja ? (
+            <>
+              {vendedorLoja.loja.logo ? (
+                <img 
+                  src={`${API_BASE_URL}/uploads/lojas/${vendedorLoja.loja.logo}`} 
+                  alt={vendedorLoja.loja.nome}
+                  className="me-2"
+                  style={{ height: '24px', width: 'auto' }}
+                />
+              ) : (
+                <i className="fas fa-store text-primary me-2"></i>
+              )}
+              <span className="ms-1 font-weight-bold">{vendedorLoja.loja.nome}</span>
+            </>
+          ) : (
+            <>
+              <i className="fas fa-shield-alt text-primary me-2"></i>
+              <span className="ms-1 font-weight-bold">Sistema Seguros</span>
+            </>
+          )}
         </Link>
       </div>
       <hr className="horizontal dark mt-0" />

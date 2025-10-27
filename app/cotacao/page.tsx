@@ -32,6 +32,7 @@ export default function Cotacao() {
   const [contratando, setContratando] = useState(false)
   const [clienteTelefone, setClienteTelefone] = useState('')
   const [clientePrecisaTelefone, setClientePrecisaTelefone] = useState(false)
+  const [lojasContratadas, setLojasContratadas] = useState<string[]>([])
 
   // Função para formatar telefone no padrão brasileiro
   const formatarTelefone = (value: string) => {
@@ -268,6 +269,12 @@ export default function Cotacao() {
       })
 
       showToast('Solicitação de contratação enviada com sucesso! Aguarde o contato do vendedor.', 'success')
+      
+      // Adicionar loja à lista de contratadas
+      if (ofertaSelecionada.loja?.id) {
+        setLojasContratadas(prev => [...prev, ofertaSelecionada.loja.id])
+      }
+      
       setShowModalContratacao(false)
       setOfertaSelecionada(null)
       setClienteTelefone('')
@@ -468,13 +475,20 @@ export default function Cotacao() {
                             </div>
                             
                             <div className="d-grid gap-2">
-                              <button 
-                                className="btn btn-success btn-sm"
-                                onClick={() => handleSelecionarOferta(lojaData.ofertas[0], lojaData.loja)}
-                              >
-                                <i className="fas fa-check me-1"></i>
-                                Contratar Agora
-                              </button>
+                              {lojasContratadas.includes(lojaData.loja.id) ? (
+                                <button className="btn btn-outline-success btn-sm" disabled>
+                                  <i className="fas fa-check-circle me-1"></i>
+                                  Cotação Enviada
+                                </button>
+                              ) : (
+                                <button 
+                                  className="btn btn-success btn-sm"
+                                  onClick={() => handleSelecionarOferta(lojaData.ofertas[0], lojaData.loja)}
+                                >
+                                  <i className="fas fa-check me-1"></i>
+                                  Contratar Agora
+                                </button>
+                              )}
                               <button className="btn btn-outline-primary btn-sm">
                                 <i className="fas fa-phone me-1"></i>
                                 {lojaData.loja.telefone}

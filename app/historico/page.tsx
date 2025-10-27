@@ -9,12 +9,15 @@ import { API_BASE_URL } from '../../lib/api'
 import { useAuth } from '../../stories/authStore'
 
 export default function Historico() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const [cotacoes, setCotacoes] = useState([])
+  const [vendas, setVendas] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingVendas, setLoadingVendas] = useState(true)
 
   useEffect(() => {
     carregarHistorico()
+    carregarVendas()
   }, [token])
 
   const carregarHistorico = async () => {
@@ -33,6 +36,22 @@ export default function Historico() {
     }
   }
 
+  const carregarVendas = async () => {
+    if (!token || !user?.id) return
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/vendas/cliente/${user.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      setVendas(response.data)
+    } catch (error) {
+      console.error('Erro ao carregar vendas:', error)
+    } finally {
+      setLoadingVendas(false)
+    }
+  }
+
   const formatarData = (data: string) => {
     return new Date(data).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -48,9 +67,86 @@ export default function Historico() {
       <DashboardLayout title="Histórico de Cotações">
       <div className="row">
         <div className="col-12">
+          <div className="card mb-4">
+            <div className="card-header pb-0">
+              <h6>Cotações Enviadas</h6>
+              <p className="text-sm text-muted mb-0">Solicitações de seguro enviadas para as lojas</p>
+            </div>
+            <div className="card-body">
+              {loadingVendas ? (
+                <div className="text-center">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Carregando...</span>
+                  </div>
+                </div>
+              ) : vendas.length === 0 ? (
+                <div className="text-center py-4">
+                  <i className="fas fa-paper-plane fa-3x text-muted mb-3"></i>
+                  <p className="text-muted">Nenhuma cotação enviada ainda</p>
+                </div>
+              ) : (
+                <div className="row">
+                  {vendas.map((venda: any) => (
+                    <div key={venda.id} className="col-md-6 mb-4">
+                      <div className="card border">
+                        <div className="card-body">
+                          <div className="d-flex justify-content-between align-items-start mb-3">
+                            <h6 className="card-title mb-0">
+                              {venda.marca} {venda.modelo}
+                            </h6>
+                            <span className={`badge ${
+                              venda.status === 'pendente' ? 'bg-warning' :
+                              venda.status === 'em_atendimento' ? 'bg-info' :
+                              venda.status === 'confirmada' ? 'bg-success' :
+                              'bg-secondary'
+                            }`}>
+                              {venda.status === 'pendente' ? 'Pendente' :
+                               venda.status === 'em_atendimento' ? 'Em Atendimento' :
+                               venda.status === 'confirmada' ? 'Confirmada' :
+                               venda.status}
+                            </span>
+                          </div>
+                          
+                          <div className="mb-3">
+                            <p className="text-sm mb-1">
+                              <strong>Loja:</strong> {venda.tipoCotacaoLoja?.loja?.nome || 'N/A'}
+                            </p>
+                            <p className="text-sm mb-1">
+                              <strong>Plano:</strong> {venda.tipoCotacaoLoja?.nome || 'N/A'}
+                            </p>
+                            <p className="text-sm mb-1">
+                              <strong>Valor:</strong> R$ {Number(venda.valorSeguro || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-sm mb-0">
+                              <strong>Enviado em:</strong> {formatarData(venda.createdAt)}
+                            </p>
+                          </div>
+
+                          {venda.vendedor && (
+                            <div className="alert alert-info py-2 mb-0">
+                              <small>
+                                <i className="fas fa-user me-1"></i>
+                                <strong>Vendedor:</strong> {venda.vendedor.nome}
+                              </small>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="row">
+        <div className="col-12">
           <div className="card">
             <div className="card-header pb-0">
-              <h6>Suas últimas 5 cotações</h6>
+              <h6>Histórico de Pesquisas</h6>
+              <p className="text-sm text-muted mb-0">Suas últimas pesquisas de cotação</p>
             </div>
             <div className="card-body">
               {loading ? (
