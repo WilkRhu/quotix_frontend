@@ -427,10 +427,24 @@ export default function Perfil() {
                 <div className="card-body">
                   <div className="text-center mb-4">
                     <div
-                      className="bg-gradient-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                      className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
                       style={{ width: '100px', height: '100px' }}
                     >
-                      <i className="fas fa-user text-white fa-3x"></i>
+                      {fotoVendedor ? (
+                        <img
+                          src={fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`}
+                          alt="Foto do perfil"
+                          className="rounded-circle"
+                          style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div
+                          className="bg-gradient-secondary rounded-circle d-flex align-items-center justify-content-center"
+                          style={{ width: '100px', height: '100px' }}
+                        >
+                          <i className="fas fa-user text-white fa-3x"></i>
+                        </div>
+                      )}
                     </div>
                     <h5 className="mb-0">{user?.name}</h5>
                     <p className="text-muted mb-0">{translateRole(user?.role)}</p>

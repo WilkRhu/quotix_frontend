@@ -56,9 +56,9 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
           if (!response.ok) {
             throw new Error('Falha ao carregar foto do vendedor')
           }
-          const dados = await response.json()
-          const fotoVendedor = dados?.foto as string | undefined
-
+  
+          const fotoVendedor = user?.foto as string | undefined
+          console.log(user, "fotoVendedor");
           if (isMounted) {
              setAvatarUrl(fotoVendedor ? `${fotoVendedor}` : null)
           }
