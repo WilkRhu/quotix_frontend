@@ -191,8 +191,13 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
             </>
           ) : (
             <>
-              <i className="fas fa-shield-alt text-primary me-2"></i>
-              <span className="ms-1 font-weight-bold">Sistema Seguros</span>
+              <img 
+                src="https://quotix-frontend.fly.dev/img/logomarcafull.png" 
+                alt="Quotix System"
+                className="me-2"
+                style={{ height: '32px', width: 'auto' }}
+              />
+              <span className="ms-1 font-weight-bold">Quotix System</span>
             </>
           )}
         </Link>

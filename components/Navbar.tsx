@@ -150,7 +150,7 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
               <li className="breadcrumb-item text-sm">
-                <a className="opacity-5 text-white" href="#">Sistema</a>
+                <a className="opacity-5 text-white" href="#">Quotix</a>
               </li>
               <li className="breadcrumb-item text-sm text-white active">{title}</li>
             </ol>
