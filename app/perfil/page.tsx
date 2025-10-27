@@ -203,7 +203,39 @@ export default function Perfil() {
   return (
     <ProtectedRoute>
       <ProfileLayout>
-        <div className="container-fluid py-4">
+        <div className="container-fluid">
+          <div className="card shadow-lg mx-4 card-profile-bottom mb-4">
+            <div className="card-body p-3">
+              <div className="row gx-4">
+                <div className="col-auto">
+                  <div className="avatar avatar-xl position-relative">
+                    {(fotoVendedor || user?.foto) ? (
+                      <img
+                        src={
+                          fotoVendedor 
+                            ? (fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`)
+                            : (user?.foto?.startsWith('http') ? user.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${user?.foto}`)
+                        }
+                        alt="profile_image"
+                        className="w-100 border-radius-lg shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-100 border-radius-lg shadow-sm bg-gradient-secondary d-flex align-items-center justify-content-center" style={{ height: '74px' }}>
+                        <i className="fas fa-user text-white fa-2x"></i>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="col-auto my-auto">
+                  <div className="h-100">
+                    <h5 className="mb-1">{user?.name}</h5>
+                    <p className="mb-0 font-weight-bold text-sm">{translateRole(user?.role)}</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
           <div className="row">
             <div className="col-md-8">
               <div className="card">
@@ -232,8 +264,8 @@ export default function Perfil() {
                           minHeight: '120px',
                           width: '120px',
                           height: '120px',
-                          background: (fotoPreview || fotoVendedor) ? 'transparent' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: (fotoPreview || fotoVendedor) ? 'inherit' : 'white'
+                          background: (fotoPreview || fotoVendedor || user?.foto) ? 'transparent' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          color: (fotoPreview || fotoVendedor || user?.foto) ? 'inherit' : 'white'
                         }}
                         onClick={() => document.getElementById('fotoInputCliente')?.click()}
                       >
@@ -244,9 +276,13 @@ export default function Perfil() {
                             className="rounded-circle shadow-sm"
                             style={{ width: '100px', height: '100px', objectFit: 'cover' }}
                           />
-                        ) : fotoVendedor ? (
+                        ) : (fotoVendedor || user?.foto) ? (
                           <img
-                            src={fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/${fotoVendedor}`}
+                            src={
+                              fotoVendedor 
+                                ? (fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`)
+                                : (user?.foto?.startsWith('http') ? user.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${user?.foto}`)
+                            }
                             alt="Foto atual"
                             className="rounded-circle shadow-sm"
                             style={{ width: '100px', height: '100px', objectFit: 'cover' }}
@@ -430,9 +466,13 @@ export default function Perfil() {
                       className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
                       style={{ width: '100px', height: '100px' }}
                     >
-                      {fotoVendedor ? (
+                      {(fotoVendedor || user?.foto) ? (
                         <img
-                          src={fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`}
+                          src={
+                            fotoVendedor 
+                              ? (fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`)
+                              : (user?.foto?.startsWith('http') ? user.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${user?.foto}`)
+                          }
                           alt="Foto do perfil"
                           className="rounded-circle"
                           style={{ width: '100px', height: '100px', objectFit: 'cover' }}
