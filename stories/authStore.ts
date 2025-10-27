@@ -14,6 +14,7 @@ interface AuthStoreState {
   logout: () => void
   setHydrated: () => void
   setSession: (payload: { user: User | null; token: string | null }) => void
+  updateUser: (userData: Partial<User>) => void
 }
 
 const useAuthStoreBase: StateCreator<AuthStoreState, [], [], AuthStoreState> = (set) => ({
@@ -77,6 +78,11 @@ const useAuthStoreBase: StateCreator<AuthStoreState, [], [], AuthStoreState> = (
   setSession: ({ user, token }: { user: User | null; token: string | null }) => {
     set({ user, token })
   },
+  updateUser: (userData: Partial<User>) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...userData } : null
+    }))
+  },
 })
 
 export const useAuthStore = create<AuthStoreState>()(
@@ -96,7 +102,7 @@ export const useAuthStore = create<AuthStoreState>()(
 )
 
 export const useAuth = () => {
-  const { user, token, isAuthenticating, hasHydrated, login, logout } = useAuthStore()
+  const { user, token, isAuthenticating, hasHydrated, login, logout, updateUser } = useAuthStore()
 
   const isAuthenticated = Boolean(user && token)
   const isLoading = !hasHydrated || isAuthenticating
@@ -106,6 +112,7 @@ export const useAuth = () => {
     token,
     login,
     logout,
+    updateUser,
     isAuthenticated,
     isLoading,
   }

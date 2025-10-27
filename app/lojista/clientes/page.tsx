@@ -18,6 +18,7 @@ interface Cliente {
   role: string
   lojaId?: string
   createdAt: string
+  foto?: string
 }
 
 interface VendaResumo {
@@ -297,6 +298,7 @@ export default function ClientesLojista() {
                       <table className="table table-striped">
                         <thead>
                           <tr>
+                            <th>Foto</th>
                             <th>Nome</th>
                             <th>Email</th>
                             <th>Data de Cadastro</th>
@@ -306,13 +308,32 @@ export default function ClientesLojista() {
                         <tbody>
                           {clientesFiltrados.length === 0 ? (
                             <tr>
-                              <td colSpan={4} className="text-center">
+                              <td colSpan={5} className="text-center">
                                 Nenhum cliente encontrado
                               </td>
                             </tr>
                           ) : (
                             clientesFiltrados.map((cliente) => (
                               <tr key={cliente.id}>
+                                <td>
+                                  <div className="avatar avatar-sm">
+                                    {cliente.foto ? (
+                                      <img
+                                        src={cliente.foto.startsWith('http') ? cliente.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${cliente.foto}`}
+                                        alt="Foto do cliente"
+                                        className="avatar-img rounded-circle"
+                                        style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                      />
+                                    ) : (
+                                      <div
+                                        className="bg-gradient-secondary rounded-circle d-flex align-items-center justify-content-center"
+                                        style={{ width: '40px', height: '40px' }}
+                                      >
+                                        <i className="fas fa-user text-white"></i>
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
                                 <td>{cliente.name}</td>
                                 <td>{cliente.email}</td>
                                 <td>{new Date(cliente.createdAt).toLocaleDateString('pt-BR')}</td>

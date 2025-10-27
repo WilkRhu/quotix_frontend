@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { useAuth } from '../../stories/authStore'
-import ProtectedRoute from '../../components/ProtectedRoute'
-import ProfileLayout from '../../components/ProfileLayout'
-import { API_BASE_URL, UPLOAD_URL } from '../../lib/api'
-import { formatCurrency } from '../../lib/formatters'
-import { resolveImageUrl } from '../../lib/images'
-import { translateRole } from '../../lib/roles'
-import { Role } from '../../types/auth'
+import { useAuth } from '../../../stories/authStore'
+import ProtectedRoute from '../../../components/ProtectedRoute'
+import DashboardLayout from '../../../components/DashboardLayout'
+import { API_BASE_URL, UPLOAD_URL } from '../../../lib/api'
+import { formatCurrency } from '../../../lib/formatters'
+import { resolveImageUrl } from '../../../lib/images'
+import { translateRole } from '../../../lib/roles'
+import { Role } from '../../../types/auth'
 
-export default function Perfil() {
+export default function PerfilLojista() {
   const { user, token, updateUser } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
@@ -207,7 +207,7 @@ export default function Perfil() {
 
   return (
     <ProtectedRoute>
-      <ProfileLayout>
+      <DashboardLayout>
         <div className="container-fluid">
           <div className="card shadow-lg mx-4 card-profile-bottom mb-4">
             <div className="card-body p-3">
@@ -237,7 +237,6 @@ export default function Perfil() {
                     <p className="mb-0 font-weight-bold text-sm">{translateRole(user?.role)}</p>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -507,7 +506,7 @@ export default function Perfil() {
             </div>
           </div>
         </div>
-      </ProfileLayout>
+      </DashboardLayout>
     </ProtectedRoute>
   )
 }
