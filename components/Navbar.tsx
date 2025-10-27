@@ -60,7 +60,7 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
           const fotoVendedor = dados?.foto as string | undefined
 
           if (isMounted) {
-             setAvatarUrl(fotoVendedor ? `${API_BASE_URL}/api/uploads/vendedores/fotos/${fotoVendedor}` : null)
+             setAvatarUrl(fotoVendedor ? `${fotoVendedor}` : null)
           }
         } catch (error) {
           if (isMounted) {
@@ -135,7 +135,7 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
 
   const avatarSrc = useMemo(() => {
     if (avatarUrl) {
-      console.log(avatarUrl);
+      console.log(avatarUrl, "teste");
       return avatarUrl
     }
     return '/assets/img/team-2.jpg'
