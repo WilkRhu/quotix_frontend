@@ -69,6 +69,7 @@ const lojistaMenuItems: MenuItem[] = [
   { href: '/lojista', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
   { href: '/lojista/loja', icon: 'fas fa-store', label: 'Minha Loja' },
   { href: '/lojista/vendedores', icon: 'fas fa-user-tie', label: 'Vendedores' },
+  { href: '/lojista/vendedores-avulsos', icon: 'fas fa-user-plus', label: 'Vendedores Avulsos' },
   {
     label: 'Vendas',
     icon: 'fas fa-chart-line',

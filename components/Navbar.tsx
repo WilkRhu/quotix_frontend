@@ -58,7 +58,6 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
           }
   
           const fotoVendedor = user?.foto as string | undefined
-          console.log(user, "fotoVendedor");
           if (isMounted) {
              setAvatarUrl(fotoVendedor ? `${fotoVendedor}` : null)
           }

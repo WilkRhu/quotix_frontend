@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { API_BASE_URL } from '../../lib/api'
 
 export default function VendedorSignup() {
   const [formData, setFormData] = useState({
@@ -28,7 +29,7 @@ export default function VendedorSignup() {
     setMessage('')
 
     try {
-      const response = await fetch('/api/vendedores-public/cadastro-avulso', {
+      const response = await fetch(`${API_BASE_URL}/api/vendedores-public/cadastro-avulso`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
