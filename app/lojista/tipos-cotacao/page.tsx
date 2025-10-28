@@ -27,6 +27,7 @@ interface TipoCotacaoLoja {
   comissaoVendasTipo?: 'percentual' | 'valor' | null
   comissaoVendasPercentual?: number | string | null
   comissaoVendasValor?: number | string | null
+  anoMinimoVeiculo?: number
 }
 
 export default function TiposCotacaoLojista() {
@@ -53,7 +54,8 @@ export default function TiposCotacaoLojista() {
     temComissaoVendas: false,
     comissaoVendasTipo: 'percentual' as 'percentual' | 'valor',
     comissaoVendasPercentual: '',
-    comissaoVendasValor: ''
+    comissaoVendasValor: '',
+    anoMinimoVeiculo: ''
   })
 
   const parseNumberInput = (value: string) => {
@@ -142,7 +144,8 @@ export default function TiposCotacaoLojista() {
       temComissaoVendas: false,
       comissaoVendasTipo: 'percentual',
       comissaoVendasPercentual: '',
-      comissaoVendasValor: ''
+      comissaoVendasValor: '',
+      anoMinimoVeiculo: ''
     })
   }
 
@@ -169,7 +172,8 @@ export default function TiposCotacaoLojista() {
       temComissaoVendas: Boolean(tipo.comissaoVendasTipo),
       comissaoVendasTipo: (tipo.comissaoVendasTipo ?? 'percentual') as 'percentual' | 'valor',
       comissaoVendasPercentual: tipo.comissaoVendasTipo === 'percentual' ? toInputString(tipo.comissaoVendasPercentual) : '',
-      comissaoVendasValor: tipo.comissaoVendasTipo === 'valor' ? toInputString(tipo.comissaoVendasValor) : ''
+      comissaoVendasValor: tipo.comissaoVendasTipo === 'valor' ? toInputString(tipo.comissaoVendasValor) : '',
+      anoMinimoVeiculo: toInputString((tipo as any).anoMinimoVeiculo)
     })
     setShowModal(true)
   }
@@ -219,6 +223,10 @@ export default function TiposCotacaoLojista() {
         payload.comissaoVendasTipo = null
         payload.comissaoVendasPercentual = null
         payload.comissaoVendasValor = null
+      }
+
+      if (form.anoMinimoVeiculo) {
+        payload.anoMinimoVeiculo = parseNumberInput(form.anoMinimoVeiculo)
       }
 
       const lojaIdForPayload = editingTipo?.lojaId ?? user?.lojaId
@@ -377,6 +385,7 @@ export default function TiposCotacaoLojista() {
                         <th>Base de Cálculo</th>
                         <th>Taxa de Adesão</th>
                         <th>Comissão de Vendas</th>
+                        <th>Ano Mínimo</th>
                         <th>Status</th>
                         <th>Ações</th>
                       </tr>
@@ -435,6 +444,13 @@ export default function TiposCotacaoLojista() {
                             )}
                           </td>
                           <td>{renderComissao(tipo)}</td>
+                          <td>
+                            {tipo.anoMinimoVeiculo ? (
+                              <span className="badge bg-info">{tipo.anoMinimoVeiculo}</span>
+                            ) : (
+                              <span className="text-muted">Sem restrição</span>
+                            )}
+                          </td>
                           <td>
                             <span className={`badge badge-sm ${tipo.ativo ? 'bg-gradient-success' : 'bg-gradient-danger'}`}>
                               {tipo.ativo ? 'Ativo' : 'Inativo'}
@@ -682,6 +698,21 @@ export default function TiposCotacaoLojista() {
                           </div>
                         </>
                       )}
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">Ano Mínimo do Veículo</label>
+                        <input
+                          type="number"
+                          min="1900"
+                          max="2030"
+                          className="form-control"
+                          value={form.anoMinimoVeiculo}
+                          onChange={(e) => setForm({ ...form, anoMinimoVeiculo: e.target.value })}
+                          placeholder="Ex: 2010"
+                        />
+                        <small className="form-text text-muted">
+                          Veículos com ano inferior não poderão usar esta cotação
+                        </small>
+                      </div>
                     </div>
                   </div>
                   <div className="modal-footer">

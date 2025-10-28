@@ -32,6 +32,7 @@ interface TipoCotacao {
   comissaoVendasTipo?: 'percentual' | 'valor' | null
   comissaoVendasPercentual?: number | string | null
   comissaoVendasValor?: number | string | null
+  anoMinimoVeiculo?: number
 }
 
 type TaxaAdesaoModo = 'padrao' | 'manual' | 'nenhuma'
@@ -56,6 +57,7 @@ interface VendaData {
   taxaAdesaoTipoManual: TaxaAdesaoTipoManual
   taxaAdesaoValorManual: number
   vendedorId?: string
+  desconto: number
 }
 
 export default function NovaVenda() {
@@ -81,11 +83,14 @@ export default function NovaVenda() {
     metodoPagamento: 'pix',
     taxaAdesaoModo: 'padrao',
     taxaAdesaoTipoManual: 'valor',
-    taxaAdesaoValorManual: 0
+    taxaAdesaoValorManual: 0,
+    desconto: 0
   })
 
   const [valorVeiculoDisplay, setValorVeiculoDisplay] = useState('R$ 0,00')
   const [taxaAdesaoValorManualDisplay, setTaxaAdesaoValorManualDisplay] = useState('R$ 0,00')
+  const [descontoDisplay, setDescontoDisplay] = useState('R$ 0,00')
+  const [mostrarDesconto, setMostrarDesconto] = useState(false)
   const [fipeToastShown, setFipeToastShown] = useState(false)
   const [incompleteSaleToastShown, setIncompleteSaleToastShown] = useState(false)
   const [editingVendaId, setEditingVendaId] = useState<number | null>(null)
@@ -111,6 +116,10 @@ export default function NovaVenda() {
       setTaxaAdesaoValorManualDisplay(formatCurrency(formData.taxaAdesaoValorManual))
     }
   }, [formData.taxaAdesaoTipoManual, formData.taxaAdesaoValorManual])
+
+  useEffect(() => {
+    setDescontoDisplay(formatCurrency(formData.desconto))
+  }, [formData.desconto])
 
   useEffect(() => {
     // Verificar se há parâmetros da busca FIPE na URL
@@ -420,6 +429,31 @@ export default function NovaVenda() {
     }))
   }
 
+  const handleDescontoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '')
+    const numericValue = Number(rawValue) / 100
+    
+    setDescontoDisplay(formatCurrency(numericValue))
+    setFormData(prev => ({
+      ...prev,
+      desconto: numericValue
+    }))
+  }
+
+  const handleMostrarDescontoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked
+    setMostrarDesconto(checked)
+    
+    if (!checked) {
+      // Se desmarcar o checkbox, zerar o desconto
+      setDescontoDisplay('R$ 0,00')
+      setFormData(prev => ({
+        ...prev,
+        desconto: 0
+      }))
+    }
+  }
+
   const resumoCalculo = useMemo(() => {
     const tipoSelecionado = tiposCotacao.find(tipo => tipo.id === formData.tipoCotacaoLojaId)
 
@@ -481,10 +515,12 @@ export default function NovaVenda() {
     }
 
     const totalComTaxa = valorBase + valorTaxaAdesao
+    const desconto = Math.max(0, formData.desconto)
+    const totalComDesconto = Math.max(0, totalComTaxa - desconto)
     const isParcelado = formData.metodoPagamento === 'cartao' && formData.formaPagamento === 'parcelado' && formData.numeroParcelas > 0
     const numeroParcelasEfetivo = isParcelado ? formData.numeroParcelas : 1
     const valorPorParcela = isParcelado
-      ? valorBase / numeroParcelasEfetivo
+      ? totalComDesconto / numeroParcelasEfetivo
       : 0
 
     return {
@@ -492,6 +528,8 @@ export default function NovaVenda() {
       valorBase,
       valorTaxaAdesao,
       totalComTaxa,
+      desconto,
+      totalComDesconto,
       valorPorParcela,
       descricaoTaxa,
       metodoPagamento: formData.metodoPagamento,
@@ -507,42 +545,30 @@ export default function NovaVenda() {
     formData.metodoPagamento,
     formData.taxaAdesaoModo,
     formData.taxaAdesaoTipoManual,
-    formData.taxaAdesaoValorManual
+    formData.taxaAdesaoValorManual,
+    formData.desconto
   ])
 
   const valorTotalAtual = useMemo(() => {
     if (resumoCalculo) {
-      return resumoCalculo.totalComTaxa
+      return resumoCalculo.totalComDesconto
     }
     return formData.valorVeiculo
   }, [resumoCalculo, formData.valorVeiculo])
 
-  const mockPixCode = useMemo(() => {
-    const total = Math.max(0, valorTotalAtual || 0)
-    const valorFormatado = total.toFixed(2)
-    const cliente = formData.clienteId || 'CLIENTE'
-    return `00020126580014BR.GOV.BCB.PIX0136MOCK-${cliente}-VENDA520400005303986540${valorFormatado.replace('.', '')}5802BR5924Corretora Segura LTDA6009SAO PAULO62070503***6304ABCD`
-  }, [valorTotalAtual, formData.clienteId])
+  const tiposCotacaoFiltrados = useMemo(() => {
+    if (!formData.ano) return tiposCotacao
+    
+    const anoVeiculo = parseInt(formData.ano)
+    if (isNaN(anoVeiculo)) return tiposCotacao
+    
+    return tiposCotacao.filter(tipo => {
+      if (!tipo.anoMinimoVeiculo) return true
+      return anoVeiculo >= tipo.anoMinimoVeiculo
+    })
+  }, [tiposCotacao, formData.ano])
 
-  const mockBoletoLinhaDigitavel = useMemo(() => {
-    const total = Math.max(0, valorTotalAtual || 0)
-    const base = `34191.79001 01043.510047 91020.150008 6 ${String(Math.round(total * 100)).padStart(10, '0')}`
-    return base
-  }, [valorTotalAtual])
 
-  const mockBoletoVencimento = useMemo(() => {
-    const data = new Date()
-    data.setDate(data.getDate() + 3)
-    return data.toLocaleDateString('pt-BR')
-  }, [])
-
-  const mockCartaoDados = useMemo(() => ({
-    bandeira: 'Visa',
-    numero: '4111 1111 1111 1111',
-    validade: '12/28',
-    nome: 'VENDEDOR MOCK',
-    cvv: '***'
-  }), [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -557,13 +583,26 @@ export default function NovaVenda() {
       return
     }
 
+    // Validar ano mínimo se tipo de cotação selecionado
+    if (formData.tipoCotacaoLojaId && formData.ano) {
+      const tipoSelecionado = tiposCotacao.find(tipo => tipo.id === formData.tipoCotacaoLojaId)
+      if (tipoSelecionado?.anoMinimoVeiculo) {
+        const anoVeiculo = parseInt(formData.ano)
+        if (anoVeiculo < tipoSelecionado.anoMinimoVeiculo) {
+          showToast(`Este tipo de cotação requer veículos a partir do ano ${tipoSelecionado.anoMinimoVeiculo}`, 'error')
+          return
+        }
+      }
+    }
+
     setLoading(true)
 
     try {
       const arredondar = (valor: number) => Math.round((valor + Number.EPSILON) * 100) / 100
 
-  const valorVeiculo = arredondar(formData.valorVeiculo)
-      const valorTotalVenda = arredondar(resumoCalculo ? resumoCalculo.totalComTaxa : valorVeiculo)
+      const valorVeiculo = arredondar(formData.valorVeiculo)
+      const valorTotalVenda = arredondar(resumoCalculo ? resumoCalculo.totalComDesconto : valorVeiculo)
+      const desconto = arredondar(formData.desconto)
 
       const payload = {
         clienteId: formData.clienteId,
@@ -578,6 +617,7 @@ export default function NovaVenda() {
         formaPagamento: formData.formaPagamento,
         numeroParcelas: formData.numeroParcelas,
         metodoPagamento: formData.metodoPagamento,
+        desconto,
         vendedorId: user?.vendedorId || formData.vendedorId
       }
 
@@ -607,9 +647,25 @@ export default function NovaVenda() {
             }
           }
         )
-        showToast('Venda criada com sucesso!', 'success')
+        
+        // Processar pagamento fake
+        try {
+          const pagamentoResponse = await axios.post(
+            `${API_BASE_URL}/api/pagamentos/processar`,
+            {
+              vendaId: response.data.id,
+              metodoPagamento: formData.metodoPagamento,
+              valor: valorTotalVenda
+            }
+          )
+          
+          showToast(`Venda criada e pagamento processado! ID: ${pagamentoResponse.data.transactionId}`, 'success')
+        } catch (pagamentoError) {
+          showToast('Venda criada, mas erro no processamento do pagamento', 'warning')
+        }
       }
-  router.push('/vendedor/vendas')
+      
+      router.push('/vendedor/vendas')
     } catch (error: any) {
       console.error('Erro ao criar venda:', error)
       const errorMessage = formatErrorMessage(error)
@@ -789,6 +845,59 @@ export default function NovaVenda() {
                       </div>
                     </div>
 
+                    {/* Checkbox para mostrar campo de desconto */}
+                    <div className="row">
+                      <div className="col-12">
+                        <div className="form-check mb-3">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id="mostrarDesconto"
+                            checked={mostrarDesconto}
+                            onChange={handleMostrarDescontoChange}
+                          />
+                          <label className="form-check-label" htmlFor="mostrarDesconto">
+                            Aplicar desconto
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Campo de Desconto - só aparece se checkbox estiver marcado */}
+                    {mostrarDesconto && (
+                      <div className="row">
+                        <div className="col-md-6">
+                          <div className="form-group">
+                            <label htmlFor="desconto">Valor do Desconto (R$)</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              id="desconto"
+                              name="desconto"
+                              value={descontoDisplay}
+                              onChange={handleDescontoChange}
+                              placeholder="R$ 0,00"
+                            />
+                            <small className="form-text text-muted">
+                              Desconto aplicado sobre o valor total
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {formData.ano && tiposCotacaoFiltrados.length < tiposCotacao.length && (
+                      <div className="row">
+                        <div className="col-12">
+                          <div className="alert alert-warning">
+                            <i className="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Atenção:</strong> Alguns tipos de cotação não estão disponíveis para veículos do ano {formData.ano}. 
+                            Apenas cotações compatíveis são exibidas abaixo.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="row">
                       <div className="col-12">
                         <div className="form-group">
@@ -801,7 +910,7 @@ export default function NovaVenda() {
                             onChange={handleInputChange}
                           >
                             <option value="">Selecione um tipo de cotação</option>
-                            {tiposCotacao.map((tipo) => (
+                            {tiposCotacaoFiltrados.map((tipo) => (
                               <option key={tipo.id} value={tipo.id}>
                                 {tipo.nome} {tipo.descricao ? `- ${tipo.descricao}` : ''}
                                 {tipo.temTaxaAdesao && (
@@ -903,76 +1012,6 @@ export default function NovaVenda() {
                       )}
                     </div>
 
-                    <div className="card mt-3">
-                      <div className="card-header bg-light">
-                        <strong>Instruções de Pagamento (Mock)</strong>
-                      </div>
-                      <div className="card-body">
-                        {formData.metodoPagamento === 'pix' && (
-                          <div className="d-flex flex-wrap align-items-start">
-                            <div
-                              className="me-3 mb-3 rounded"
-                              style={{
-                                width: '140px',
-                                height: '140px',
-                                background: 'repeating-linear-gradient(45deg, #000, #000 10px, #fff 10px, #fff 20px)',
-                                boxShadow: 'inset 0 0 4px rgba(0,0,0,0.3)'
-                              }}
-                              aria-hidden="true"
-                            ></div>
-                            <div className="flex-grow-1">
-                              <p className="mb-1">Escaneie o QR code pelo app bancário para concluir o pagamento.</p>
-                              <p className="mb-1"><strong>Valor:</strong> {formatCurrency(valorTotalAtual)}</p>
-                              <p className="mb-1 small text-muted">Ou copie o código Pix:</p>
-                              <code className="d-block small text-wrap" style={{ whiteSpace: 'pre-wrap' }}>{mockPixCode}</code>
-                            </div>
-                          </div>
-                        )}
-
-                        {formData.metodoPagamento === 'boleto' && (
-                          <div>
-                            <p className="mb-1">Apresente o boleto abaixo em uma casa lotérica ou banco até o vencimento.</p>
-                            <p className="mb-1"><strong>Valor:</strong> {formatCurrency(valorTotalAtual)}</p>
-                            <p className="mb-1"><strong>Vencimento:</strong> {mockBoletoVencimento}</p>
-                            <p className="mb-1 small text-muted">Linha digitável:</p>
-                            <code className="d-block small text-wrap" style={{ whiteSpace: 'pre-wrap' }}>{mockBoletoLinhaDigitavel}</code>
-                          </div>
-                        )}
-
-                        {formData.metodoPagamento === 'cartao' && (
-                          <div>
-                            <p className="mb-2">Integração de cartão será disponibilizada futuramente. Utilize os dados fictícios abaixo para testes.</p>
-                            <div className="row g-3">
-                              <div className="col-md-6">
-                                <label className="form-label">Número do Cartão</label>
-                                <input type="text" className="form-control" value={mockCartaoDados.numero} readOnly />
-                              </div>
-                              <div className="col-md-3">
-                                <label className="form-label">Validade</label>
-                                <input type="text" className="form-control" value={mockCartaoDados.validade} readOnly />
-                              </div>
-                              <div className="col-md-3">
-                                <label className="form-label">CVV</label>
-                                <input type="text" className="form-control" value={mockCartaoDados.cvv} readOnly />
-                              </div>
-                              <div className="col-12">
-                                <label className="form-label">Nome Impresso</label>
-                                <input type="text" className="form-control" value={mockCartaoDados.nome} readOnly />
-                              </div>
-                              <div className="col-12">
-                                <p className="mb-0"><strong>Valor total:</strong> {formatCurrency(valorTotalAtual)}</p>
-                                {formData.formaPagamento === 'parcelado' && (
-                                  <small className="text-muted">Simulação em {formData.numeroParcelas}x sem juros.</small>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        <small className="d-block text-muted mt-3">Integração real com operadora de pagamentos será configurada posteriormente.</small>
-                      </div>
-                    </div>
-
                     {resumoCalculo && (
                       <div className="row">
                         <div className="col-12">
@@ -986,32 +1025,44 @@ export default function NovaVenda() {
                               <span className="badge bg-light text-dark">Valor do veículo: {formatCurrency(formData.valorVeiculo)}</span>
                             </div>
                             <div className="row">
-                              <div className="col-md-4">
+                              <div className={resumoCalculo.desconto > 0 ? "col-md-3" : "col-md-4"}>
                                 <p className="mb-1"><strong>Base do seguro:</strong></p>
                                 <p className="mb-0">{formatCurrency(resumoCalculo.valorBase)}</p>
                               </div>
-                              <div className="col-md-4">
+                              <div className={resumoCalculo.desconto > 0 ? "col-md-3" : "col-md-4"}>
                                 <p className="mb-1"><strong>Taxa de adesão:</strong></p>
                                 <p className="mb-0">{formatCurrency(resumoCalculo.valorTaxaAdesao)}</p>
                               </div>
-                              <div className="col-md-4">
-                                <p className="mb-1"><strong>Total com taxa:</strong></p>
-                                <p className="mb-0">{formatCurrency(resumoCalculo.totalComTaxa)}</p>
+                              {resumoCalculo.desconto > 0 && (
+                                <div className="col-md-3">
+                                  <p className="mb-1"><strong>Desconto:</strong></p>
+                                  <p className="mb-0 text-success">-{formatCurrency(resumoCalculo.desconto)}</p>
+                                </div>
+                              )}
+                              <div className={resumoCalculo.desconto > 0 ? "col-md-3" : "col-md-4"}>
+                                <p className="mb-1"><strong>Total final:</strong></p>
+                                <p className="mb-0 fw-bold text-primary">{formatCurrency(resumoCalculo.totalComDesconto)}</p>
                               </div>
                             </div>
                             {resumoCalculo.isParcelado ? (
                               <div className="mt-3">
                                 <p className="mb-1"><strong>Valor mensal ({resumoCalculo.numeroParcelas}x):</strong> {formatCurrency(resumoCalculo.valorPorParcela)}</p>
                                 <p className="mb-1"><strong>Taxa de adesão (única):</strong> {formatCurrency(resumoCalculo.valorTaxaAdesao)}</p>
+                                {resumoCalculo.desconto > 0 && (
+                                  <p className="mb-1 text-success"><strong>Desconto aplicado:</strong> -{formatCurrency(resumoCalculo.desconto)}</p>
+                                )}
                                 <small className="d-block text-muted mb-1">{resumoCalculo.descricaoTaxa}</small>
-                                <p className="mb-0"><strong>Valor mensal + taxa de adesão:</strong> {formatCurrency(resumoCalculo.valorPorParcela + resumoCalculo.valorTaxaAdesao)}</p>
+                                <p className="mb-0"><strong>Total final a pagar:</strong> {formatCurrency(resumoCalculo.totalComDesconto)}</p>
                               </div>
                             ) : (
                               <div className="mt-3">
                                 <p className="mb-1"><strong>Valor do seguro:</strong> {formatCurrency(resumoCalculo.valorBase)}</p>
                                 <p className="mb-1"><strong>Taxa de adesão:</strong> {formatCurrency(resumoCalculo.valorTaxaAdesao)}</p>
+                                {resumoCalculo.desconto > 0 && (
+                                  <p className="mb-1 text-success"><strong>Desconto aplicado:</strong> -{formatCurrency(resumoCalculo.desconto)}</p>
+                                )}
                                 <small className="d-block text-muted mb-1">{resumoCalculo.descricaoTaxa}</small>
-                                <p className="mb-0"><strong>Total a pagar:</strong> {formatCurrency(resumoCalculo.totalComTaxa)}</p>
+                                <p className="mb-0"><strong>Total final a pagar:</strong> {formatCurrency(resumoCalculo.totalComDesconto)}</p>
                               </div>
                             )}
                           </div>
@@ -1024,7 +1075,7 @@ export default function NovaVenda() {
                         <button
                           type="submit"
                           className="btn btn-primary"
-                          disabled={loading}
+                          disabled={loading || (formData.ano && tiposCotacaoFiltrados.length === 0)}
                         >
                           {loading ? (
                             <>
@@ -1032,7 +1083,7 @@ export default function NovaVenda() {
                               {editingVendaId ? 'Atualizando Venda...' : 'Criando Venda...'}
                             </>
                           ) : (
-                            editingVendaId ? 'Atualizar Venda' : 'Criar Venda'
+                            editingVendaId ? 'Atualizar Venda' : 'Criar Venda & Processar Pagamento'
                           )}
                         </button>
                         <button

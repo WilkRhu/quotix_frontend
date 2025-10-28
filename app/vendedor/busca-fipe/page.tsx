@@ -164,13 +164,20 @@ export default function BuscaFipe() {
     const tipoParaVenda = veiculoSelecionado.tipoVeiculo === 'carros' ? 'Carro' :
                          veiculoSelecionado.tipoVeiculo === 'motos' ? 'Moto' : 'Caminhão'
 
+    // Converter valor FIPE de string para número
+    const valorFipeNumerico = veiculoSelecionado.Valor
+      .replace('R$', '')
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .trim()
+
     // Criar query string com os dados
     const params = new URLSearchParams({
       tipoVeiculo: tipoParaVenda,
       marca: veiculoSelecionado.Marca,
       modelo: veiculoSelecionado.Modelo,
       ano: veiculoSelecionado.AnoModelo,
-      valorFipe: veiculoSelecionado.Valor
+      valorFipe: valorFipeNumerico
     })
 
     router.push(`/vendedor/nova-venda?${params.toString()}`)
