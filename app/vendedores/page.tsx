@@ -1,21 +1,14 @@
 'use client'
 
-import ClientHero from '../../components/Landing/ClientHero'
-import HowItWorks from '../../components/Landing/HowItWorks'
-import ClientBenefits from '../../components/Landing/ClientBenefits'
-import ClientSignup from '../../components/Landing/ClientSignup'
+import VendedorHero from '../../components/Landing/VendedorHero'
+import VendedorHowItWorks from '../../components/Landing/VendedorHowItWorks'
+import VendedorBenefits from '../../components/Landing/VendedorBenefits'
+import VendedorSignup from '../../components/Landing/VendedorSignup'
 import Footer from '../../components/Landing/Footer'
 
-export default function ClientePage() {
+export default function VendedoresPage() {
   return (
     <div>
-      {/* PÁGINA TEMPORARIAMENTE DESATIVADA */}
-      <div className="container-fluid bg-warning text-dark py-2 text-center">
-        <small>
-          <i className="fas fa-exclamation-triangle me-2"></i>
-          Esta página está temporariamente desativada. Acesse <a href="/vendedores" className="text-dark fw-bold">nossa nova página para vendedores</a>
-        </small>
-      </div>
       <style>{`
         .navbar-premium {
           background: rgba(255, 255, 255, 0.98) !important;
@@ -78,6 +71,7 @@ export default function ClientePage() {
         .btn-signup-premium:hover {
           transform: translateY(-3px);
           box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+          color: white !important;
         }
 
         .brand-premium {
@@ -119,11 +113,11 @@ export default function ClientePage() {
               </li>
               <li className="nav-item">
                 <a className="nav-link nav-link-premium" href="#beneficios">
-                  <i className="fas fa-shield-alt me-2" style={{ color: '#667eea' }}></i>Benefícios
+                  <i className="fas fa-star me-2" style={{ color: '#667eea' }}></i>Benefícios
                 </a>
               </li>
               <li className="nav-item">
-                <a className="nav-link nav-link-premium" href="#cadastro-cliente">
+                <a className="nav-link nav-link-premium" href="#cadastro-vendedor">
                   <i className="fas fa-user-plus me-2" style={{ color: '#667eea' }}></i>Cadastre-se
                 </a>
               </li>
@@ -132,13 +126,14 @@ export default function ClientePage() {
                   <i className="fas fa-store me-2" style={{ color: '#667eea' }}></i>Para Lojistas
                 </a>
               </li>
+
               <li className="nav-item ms-lg-3">
                 <a className="nav-link btn btn-login-premium px-3 py-2 rounded-lg" href="/login">
                   Login
                 </a>
               </li>
               <li className="nav-item ms-lg-2">
-                <a className="nav-link btn btn-signup-premium px-4 py-2 rounded-lg" href="#cadastro-cliente">
+                <a className="nav-link btn btn-signup-premium px-4 py-2 rounded-lg" href="#cadastro-vendedor">
                   <i className="fas fa-user-plus me-2"></i>Criar Conta
                 </a>
               </li>
@@ -147,10 +142,10 @@ export default function ClientePage() {
         </div>
       </nav>
       
-      <ClientHero />
-      <HowItWorks />
-      <ClientBenefits />
-      <ClientSignup />
+      <VendedorHero />
+      <VendedorHowItWorks />
+      <VendedorBenefits />
+      <VendedorSignup />
       <Footer />
     </div>
   )

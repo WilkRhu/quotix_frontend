@@ -70,6 +70,14 @@ const lojistaMenuItems: MenuItem[] = [
   { href: '/lojista/loja', icon: 'fas fa-store', label: 'Minha Loja' },
   { href: '/lojista/vendedores', icon: 'fas fa-user-tie', label: 'Vendedores' },
   {
+    label: 'Vendas',
+    icon: 'fas fa-chart-line',
+    submenu: [
+      { href: '/lojista/vendas/internas', label: 'Vendas Internas' },
+      { href: '/lojista/vendas/avulsas', label: 'Vendas Avulsas' }
+    ]
+  },
+  {
     label: 'Clientes',
     icon: 'fas fa-users',
     submenu: [
@@ -79,6 +87,7 @@ const lojistaMenuItems: MenuItem[] = [
   },
   { href: '/lojista/tipos-cotacao', icon: 'fas fa-calculator', label: 'Tipos de Cotação' },
   { href: '/lojista/planos', icon: 'fas fa-box', label: 'Planos' },
+  { href: '/lojista/configuracoes', icon: 'fas fa-cog', label: 'Configurações' },
 ]
 
 export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
