@@ -127,10 +127,11 @@ export default function Home() {
                 </a>
               </li>
               <li className="nav-item">
-                <a className="nav-link nav-link-premium" href="/clientes">
-                  <i className="fas fa-user me-2" style={{ color: '#667eea' }}></i>Para Clientes
+                <a className="nav-link nav-link-premium" href="/vendedores">
+                  <i className="fas fa-user-tie me-2" style={{ color: '#667eea' }}></i>Para Vendedores
                 </a>
               </li>
+
               <li className="nav-item ms-lg-3">
                 <a className="nav-link btn btn-login-premium px-3 py-2 rounded-lg" href="/login">
                   Login

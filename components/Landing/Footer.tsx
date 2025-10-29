@@ -6,7 +6,7 @@ export default function Footer() {
 
   return (
     <footer 
-      className="text-white py-5 mt-5"
+      className="text-white py-5"
       style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         position: 'relative',
@@ -82,6 +82,9 @@ export default function Footer() {
                 <a href="#" className="text-white text-decoration-none hover-text-light">Carreira</a>
               </li>
               <li className="mb-2">
+                <a href="#cadastro-vendedor" className="text-white text-decoration-none hover-text-light">Cadastro Vendedor</a>
+              </li>
+              <li className="mb-2">
                 <a href="#" className="text-white text-decoration-none hover-text-light">Contato</a>
               </li>
             </ul>
@@ -116,7 +119,7 @@ export default function Footer() {
           </div>
           <div className="col-md-6 text-center text-md-end">
             <p className="mb-0 opacity-90">
-              Desenvolvido com <i className="fas fa-heart text-light"></i> por nossa equipe
+              Desenvolvido por WC Web System
             </p>
           </div>
         </div>

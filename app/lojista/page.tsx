@@ -105,8 +105,8 @@ export default function DashboardLojista() {
 
       const [vendedoresRes, tiposRes, cotacoesRes, vendasRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/lojas/vendedores/loja/${lojaId}`, { headers: authHeaders }),
-        fetch(`${API_BASE_URL}/api/lojas/tipo-ofertas`, { headers: authHeaders }),
-        fetch(`${API_BASE_URL}/api/lojas/cotacoes-loja`, { headers: authHeaders }),
+        fetch(`${API_BASE_URL}/api/lojas/${lojaId}/tipos-cotacao`, { headers: authHeaders }),
+        fetch(`${API_BASE_URL}/api/lojas/${lojaId}/tipos-cotacao`, { headers: authHeaders }),
         fetch(`${API_BASE_URL}/api/lojas/${lojaId}/vendas`, { headers: authHeaders })
       ])
 
@@ -426,7 +426,7 @@ export default function DashboardLojista() {
                   </div>
                   <div className="col-4 text-end">
                     <div className="icon icon-shape bg-gradient-info shadow text-center border-radius-md">
-                      <i className="ni ni-single-02 text-lg opacity-10"></i>
+                      <i className="fas fa-users text-lg opacity-10"></i>
                     </div>
                   </div>
                 </div>
@@ -645,7 +645,7 @@ export default function DashboardLojista() {
               <div className="card-body">
                 <div className="d-grid gap-2">
                   <Link href="/lojista/vendedores" className="btn btn-info">
-                    <i className="fas fa-user-plus me-2"></i>
+                    <i className="fas fa-users me-2"></i>
                     Gerenciar Vendedores
                   </Link>
                   <Link href="/lojista/tipos-cotacao" className="btn btn-primary">

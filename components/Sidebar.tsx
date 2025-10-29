@@ -65,21 +65,41 @@ const getVendedorMenuItems = (badge: number): MenuItem[] => [
   },
 ]
 
-const lojistaMenuItems: MenuItem[] = [
-  { href: '/lojista', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
-  { href: '/lojista/loja', icon: 'fas fa-store', label: 'Minha Loja' },
-  { href: '/lojista/vendedores', icon: 'fas fa-user-tie', label: 'Vendedores' },
-  {
-    label: 'Clientes',
-    icon: 'fas fa-users',
-    submenu: [
-      { href: '/lojista/cadastrar-cliente', label: 'Cadastrar Cliente' },
-      { href: '/lojista/clientes', label: 'Lista de Clientes' }
-    ]
-  },
-  { href: '/lojista/tipos-cotacao', icon: 'fas fa-calculator', label: 'Tipos de Cotação' },
-  { href: '/lojista/planos', icon: 'fas fa-box', label: 'Planos' },
-]
+const getLojistaMenuItems = (aceitaVendedorAvulso: boolean): MenuItem[] => {
+  const baseItems: MenuItem[] = [
+    { href: '/lojista', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+    { href: '/lojista/loja', icon: 'fas fa-store', label: 'Minha Loja' },
+    { href: '/lojista/vendedores', icon: 'fas fa-user-tie', label: 'Vendedores' },
+  ]
+  
+  if (aceitaVendedorAvulso) {
+    baseItems.push({ href: '/lojista/vendedores-avulsos', icon: 'fas fa-user-plus', label: 'Vendedores Avulsos' })
+  }
+  
+  baseItems.push(
+    {
+      label: 'Vendas',
+      icon: 'fas fa-chart-line',
+      submenu: [
+        { href: '/lojista/vendas/internas', label: 'Vendas Internas' },
+        { href: '/lojista/vendas/avulsas', label: 'Vendas Avulsas' }
+      ]
+    },
+    {
+      label: 'Clientes',
+      icon: 'fas fa-users',
+      submenu: [
+        { href: '/lojista/cadastrar-cliente', label: 'Cadastrar Cliente' },
+        { href: '/lojista/clientes', label: 'Lista de Clientes' }
+      ]
+    },
+    { href: '/lojista/tipos-cotacao', icon: 'fas fa-calculator', label: 'Tipos de Cotação' },
+    { href: '/lojista/planos', icon: 'fas fa-box', label: 'Planos' },
+    { href: '/lojista/configuracoes', icon: 'fas fa-cog', label: 'Configurações' }
+  )
+  
+  return baseItems
+}
 
 export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname()
@@ -87,6 +107,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const [openSubmenus, setOpenSubmenus] = useState<{[key: string]: boolean}>({})
   const [vendasEmAtendimento, setVendasEmAtendimento] = useState(0)
   const [vendedorLoja, setVendedorLoja] = useState<any>(null)
+  const [lojaConfig, setLojaConfig] = useState<any>(null)
 
   useEffect(() => {
     if (user?.role === Role.SELLER && token) {
@@ -123,6 +144,24 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
       const interval = setInterval(fetchContador, 30000)
       return () => clearInterval(interval)
     }
+    
+    if ((user?.role === Role.LOJISTA || user?.role === Role.LOGIST) && token) {
+      const fetchLojaConfig = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/api/lojas/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (response.ok) {
+            const data = await response.json()
+            setLojaConfig(data)
+          }
+        } catch (error) {
+          console.error('Erro ao buscar configurações da loja:', error)
+        }
+      }
+      
+      fetchLojaConfig()
+    }
   }, [user?.role, token])
   
   const getMenuItems = () => {
@@ -133,7 +172,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
       return getVendedorMenuItems(vendasEmAtendimento)
     }
     if (user?.role === Role.LOJISTA || user?.role === Role.LOGIST) {
-      return lojistaMenuItems
+      return getLojistaMenuItems(lojaConfig?.aceitaVendedorAvulso || false)
     }
     return adminMenuItems
   }
