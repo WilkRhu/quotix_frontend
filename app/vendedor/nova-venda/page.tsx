@@ -20,6 +20,7 @@ interface Cliente {
 interface TipoCotacao {
   id: string
   nome: string
+  tipoVeiculo?: string
   descricao?: string
   temTaxaAdesao: boolean
   taxaAdesaoTipo?: string
