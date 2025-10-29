@@ -1155,7 +1155,7 @@ export default function NovaVenda() {
                         <button
                           type="submit"
                           className="btn btn-primary"
-                          disabled={loading || (formData.ano && tiposCotacaoFiltrados.length === 0)}
+                          disabled={loading || Boolean(formData.ano && tiposCotacaoFiltrados.length === 0)}
                         >
                           {loading ? (
                             <>
