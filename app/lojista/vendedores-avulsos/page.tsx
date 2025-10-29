@@ -7,78 +7,6 @@ import { Role } from '../../../types/auth'
 import { useAuth } from '../../../stories/authStore'
 import { API_BASE_URL } from '../../../lib/api'
 
-// Componente de upload com preview
-function UploadPreview({ vendedorId, fotoAtual, token }: { vendedorId: string, fotoAtual?: string, token: string }) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState('');
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (ev) => setPreview(ev.target?.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-    setUploading(true);
-    setMessage('');
-    try {
-      const formData = new FormData();
-      formData.append('foto', selectedFile);
-      const response = await fetch(`${API_BASE_URL}/api/users/${vendedorId}/foto`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      if (!response.ok) throw new Error('Erro ao enviar foto');
-      setMessage('Foto enviada com sucesso!');
-      setPreview(null);
-      setSelectedFile(null);
-    } catch (err) {
-      setMessage('Erro ao enviar foto');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <div className="d-flex flex-column align-items-center">
-      <div
-        className="border-2 border-dashed border-primary rounded-circle d-flex flex-column align-items-center justify-content-center mb-2 cursor-pointer"
-        style={{ width: '100px', height: '100px', cursor: 'pointer', background: preview || fotoAtual ? 'transparent' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
-        onClick={() => document.getElementById(`fotoInput-${vendedorId}`)?.click()}
-      >
-        {preview ? (
-          <img src={preview} alt="Preview" className="rounded-circle shadow-sm" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
-        ) : fotoAtual ? (
-          <img src={`${API_BASE_URL}/uploads/vendedores/${fotoAtual}`} alt="Foto atual" className="rounded-circle shadow-sm" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
-        ) : (
-          <i className="fas fa-cloud-upload-alt fa-2x text-white"></i>
-        )}
-      </div>
-      <input
-        id={`fotoInput-${vendedorId}`}
-        type="file"
-        style={{ display: 'none' }}
-        accept="image/*"
-        onChange={handleFileChange}
-      />
-      {preview && (
-        <button className="btn btn-info btn-sm mt-2" onClick={handleUpload} disabled={uploading}>
-          {uploading ? 'Enviando...' : 'Enviar Foto'}
-        </button>
-      )}
-      {message && <small className={`text-${message.includes('sucesso') ? 'success' : 'danger'} mt-2`}>{message}</small>}
-    </div>
-  );
-}
-
 export default function VendedoresAvulsosPage() {
   const { token } = useAuth()
   const [loading, setLoading] = useState(true)
@@ -86,21 +14,67 @@ export default function VendedoresAvulsosPage() {
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const [lojaConfig, setLojaConfig] = useState<any>(null)
+  const [vendedoresAprovados, setVendedoresAprovados] = useState<any[]>([])
 
   useEffect(() => {
-    carregarSolicitacoes()
+    carregarDados()
   }, [])
 
-  const carregarSolicitacoes = async () => {
+  const carregarDados = async () => {
+    await Promise.all([carregarSolicitacoes(), carregarConfigLoja(), carregarVendedoresAprovados()])
+  }
+
+  const carregarVendedoresAprovados = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/vendedores-avulsos/solicitacoes`, {
+      const response = await fetch(`${API_BASE_URL}/api/api/vendedores-avulsos`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
       if (response.ok) {
+        const vendedores = await response.json()
+        setVendedoresAprovados(vendedores)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar vendedores aprovados:', error)
+    }
+  }
+
+  const carregarConfigLoja = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/api/lojas/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const loja = await response.json()
+        setLojaConfig(loja)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configurações da loja:', error)
+    }
+  }
+
+  const carregarSolicitacoes = async () => {
+    console.log('Carregando solicitações...')
+    console.log('Token:', token)
+    console.log('URL:', `${API_BASE_URL}/api/vendedores-avulsos/solicitacoes`)
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/api/vendedores-avulsos/solicitacoes`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+      
+      if (response.ok) {
         const data = await response.json()
+        console.log('Dados recebidos:', data)
         setSolicitacoes(data)
       } else {
+        const errorText = await response.text()
+        console.log('Erro response:', errorText)
         setMessage(`Erro ao carregar solicitações: ${response.status}`)
         setMessageType('error')
       }
@@ -115,7 +89,7 @@ export default function VendedoresAvulsosPage() {
 
   const responderSolicitacao = async (solicitacaoId: string, status: 'aprovada' | 'rejeitada', comissaoNegociada?: number) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/vendedores-avulsos/solicitacoes/${solicitacaoId}/responder`, {
+      const response = await fetch(`${API_BASE_URL}/api/api/vendedores-avulsos/solicitacoes/${solicitacaoId}/responder`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,6 +134,88 @@ export default function VendedoresAvulsosPage() {
   return (
     <ProtectedRoute requiredRoles={[Role.LOJISTA, Role.LOGIST]}>
       <DashboardLayout title="Vendedores Avulsos">
+        {lojaConfig && (
+          <div className={`card mb-4 ${lojaConfig.aceitaVendedorAvulso ? 'border-success' : 'border-warning'}`}>
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-shrink-0">
+                  <i className={`fas ${lojaConfig.aceitaVendedorAvulso ? 'fa-check-circle text-success' : 'fa-exclamation-triangle text-warning'} fa-2x`}></i>
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h6 className="mb-1">
+                    {lojaConfig.aceitaVendedorAvulso ? 'Vendedores Avulsos Ativados' : 'Vendedores Avulsos Desativados'}
+                  </h6>
+                  <p className="mb-0 text-muted">
+                    {lojaConfig.aceitaVendedorAvulso 
+                      ? `Sua loja está aceitando vendedores avulsos com comissão de ${lojaConfig.comissaoVendedorAvulso || 5}%`
+                      : 'Ative a funcionalidade nas configurações para receber solicitações de vendedores avulsos'
+                    }
+                  </p>
+                  {!lojaConfig.aceitaVendedorAvulso && (
+                    <a href="/lojista/configuracoes" className="btn btn-sm btn-primary mt-2">
+                      <i className="fas fa-cog me-1"></i>
+                      Ir para Configurações
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {vendedoresAprovados.length > 0 && (
+          <div className="card mb-4">
+            <div className="card-header">
+              <h5 className="mb-0">
+                <i className="fas fa-users me-2"></i>
+                Vendedores Avulsos Aprovados
+                <span className="badge bg-success ms-2">{vendedoresAprovados.length}</span>
+              </h5>
+            </div>
+            <div className="card-body">
+              <div className="table-responsive">
+                <table className="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Vendedor</th>
+                      <th>Contato</th>
+                      <th>Localização</th>
+                      <th>Comissão</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vendedoresAprovados.map((vendedor: any) => (
+                      <tr key={vendedor.id}>
+                        <td>
+                          <strong>{vendedor.nome}</strong>
+                        </td>
+                        <td>
+                          <div>
+                            <small className="d-block">{vendedor.email}</small>
+                            <small className="d-block">{vendedor.telefone}</small>
+                          </div>
+                        </td>
+                        <td>
+                          <small>{vendedor.cidade} - {vendedor.estado}</small>
+                        </td>
+                        <td>
+                          <span className="badge bg-info">
+                            {vendedor.comissoesNegociadas?.[lojaConfig?.id] || lojaConfig?.comissaoVendedorAvulso || 5}%
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge bg-success">Ativo</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="card">
           <div className="card-header">
             <div className="d-flex justify-content-between align-items-center">
@@ -277,7 +333,21 @@ export default function VendedoresAvulsosPage() {
                               <div className="card card-body bg-light">
                                 <h6 className="mb-3">Informações Detalhadas</h6>
                                 <div className="row">
-                                  <div className="col-md-6">
+                                  <div className="col-md-3 text-center">
+                                    {solicitacao.vendedor?.foto ? (
+                                      <img
+                                        src={solicitacao.vendedor.foto.startsWith('http')
+                                          ? solicitacao.vendedor.foto
+                                          : `${API_BASE_URL}${solicitacao.vendedor.foto}`}
+                                        alt="Foto do vendedor"
+                                        className="rounded-circle shadow-sm"
+                                        style={{ width: '120px', height: '120px', objectFit: 'cover', border: '3px solid #764ba2' }}
+                                      />
+                                    ) : (
+                                      <span className="text-muted">Sem foto cadastrada</span>
+                                    )}
+                                  </div>
+                                  <div className="col-md-4">
                                     <div className="mb-2">
                                       <strong>CPF:</strong> {solicitacao.vendedor?.cpf}
                                     </div>
@@ -290,7 +360,7 @@ export default function VendedoresAvulsosPage() {
                                       </div>
                                     )}
                                   </div>
-                                  <div className="col-md-6">
+                                  <div className="col-md-5">
                                     <div className="mb-2">
                                       <strong>Endereço:</strong> {solicitacao.vendedor?.endereco}, {solicitacao.vendedor?.numero}
                                       {solicitacao.vendedor?.complemento && `, ${solicitacao.vendedor.complemento}`}
@@ -304,10 +374,6 @@ export default function VendedoresAvulsosPage() {
                                       <strong>Cadastrado em:</strong> {new Date(solicitacao.vendedor?.createdAt).toLocaleDateString('pt-BR')}
                                     </div>
                                   </div>
-                                </div>
-                                <div className="mt-4">
-                                  <h6 className="mb-2">Foto do Vendedor</h6>
-                                  <UploadPreview vendedorId={solicitacao.vendedor?.id} fotoAtual={solicitacao.vendedor?.foto} token={token} />
                                 </div>
                               </div>
                             </td>

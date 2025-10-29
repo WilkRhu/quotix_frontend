@@ -503,7 +503,9 @@ export default function PerfilVendedor() {
                 <div className="row">
                   <div className="col-8">
                     <div className="numbers">
-                      <p className="text-sm mb-0 text-capitalize font-weight-bold">Comissão Total</p>
+                      <p className="text-sm mb-0 text-capitalize font-weight-bold">
+                        {vendedor?.tipoVendedor === 'avulso' ? 'Comissão Avulsa' : 'Comissão Total'}
+                      </p>
                       <h5 className="font-weight-bolder mb-0">
                         {formatMoney(totaisVendas.comissaoTotal)}
                       </h5>

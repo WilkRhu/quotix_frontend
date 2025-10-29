@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { API_BASE_URL } from '../../lib/api'
+import UploadWithPreview from './UploadWithPreview'
 
 export default function VendedorSignup() {
   const [formData, setFormData] = useState({
@@ -17,7 +18,7 @@ export default function VendedorSignup() {
     cep: '',
     experiencia: ''
   })
-
+  const [foto, setFoto] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
@@ -28,16 +29,24 @@ export default function VendedorSignup() {
     setLoading(true)
     setMessage('')
 
+    if (!foto) {
+      setMessage('Foto é obrigatória!')
+      setMessageType('error')
+      setLoading(false)
+      return
+    }
+
     try {
+      const form = new FormData()
+      Object.entries(formData).forEach(([key, value]) => {
+        form.append(key, value)
+      })
+      form.append('tipoVendedor', 'avulso')
+      form.append('foto', foto)
+
       const response = await fetch(`${API_BASE_URL}/api/vendedores-public/cadastro-avulso`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          tipoVendedor: 'avulso'
-        }),
+        body: form,
       })
 
       const data = await response.json()
@@ -58,12 +67,19 @@ export default function VendedorSignup() {
           cep: '',
           experiencia: ''
         })
+        setFoto(null)
       } else {
         setMessage(data.message || 'Erro ao realizar cadastro')
         setMessageType('error')
       }
-    } catch (error) {
-      setMessage('Erro ao conectar com o servidor')
+    } catch (error: any) {
+      let errorMsg = 'Erro ao conectar com o servidor'
+      if (error) {
+        if (typeof error === 'string') errorMsg = error
+        else if (error.message && typeof error.message === 'string') errorMsg = error.message
+        else if (error.name) errorMsg = `${error.name}: ${error.message || ''}`
+      }
+      setMessage(errorMsg)
       setMessageType('error')
     } finally {
       setLoading(false)
@@ -112,8 +128,13 @@ export default function VendedorSignup() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+    const { name, value, type, files } = e.target as HTMLInputElement
     let maskedValue = value
+
+    if (type === 'file' && name === 'foto' && files && files[0]) {
+      setFoto(files[0])
+      return
+    }
 
     if (name === 'cpf') {
       maskedValue = applyMask(value, 'cpf')
@@ -151,7 +172,6 @@ export default function VendedorSignup() {
             </p>
           </div>
         </div>
-
         <div className="row">
           <div className="col-lg-8 mx-auto">
             <div className="card border-0 shadow-lg">
@@ -162,9 +182,17 @@ export default function VendedorSignup() {
                     {message}
                   </div>
                 )}
-                
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} encType="multipart/form-data">
                   <div className="row g-3">
+                    <div className="col-md-12 mb-4">
+                      <UploadWithPreview
+                        value={foto}
+                        onChange={setFoto}
+                        required
+                        label="Foto de Perfil"
+                        accept="image/*"
+                      />
+                    </div>
                     <div className="col-md-6">
                       <label className="form-label">Nome Completo *</label>
                       <input
@@ -311,86 +339,29 @@ export default function VendedorSignup() {
                         <option value="RO">Rondônia</option>
                         <option value="RR">Roraima</option>
                         <option value="SC">Santa Catarina</option>
-                        <option value="SP">São Paulo</option>
                         <option value="SE">Sergipe</option>
+                        <option value="SP">São Paulo</option>
                         <option value="TO">Tocantins</option>
                       </select>
                     </div>
-                    <div className="col-12">
-                      <label className="form-label">Experiência em Vendas</label>
-                      <select
-                        className="form-select form-select-lg"
-                        name="experiencia"
-                        value={formData.experiencia}
-                        onChange={handleChange}
+                    <div className="col-md-12">
+                      <button
+                        type="submit"
+                        className="btn btn-primary btn-lg w-100"
+                        disabled={loading}
                       >
-                        <option value="">Selecione sua experiência...</option>
-                        <option value="iniciante">Iniciante (0-1 ano) - Estou começando na área de vendas</option>
-                        <option value="intermediario">Intermediário (1-3 anos) - Tenho experiência básica em vendas</option>
-                        <option value="experiente">Experiente (3-5 anos) - Tenho boa experiência e resultados em vendas</option>
-                        <option value="senior">Sênior (5+ anos) - Sou especialista em vendas com histórico sólido</option>
-                        <option value="especialista">Especialista (10+ anos) - Sou referência em vendas e liderança</option>
-                      </select>
+                        {loading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Enviando...
+                          </>
+                        ) : (
+                          'Cadastrar'
+                        )}
+                      </button>
                     </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <div className="form-check">
-                      <input className="form-check-input" type="checkbox" id="termos" required />
-                      <label className="form-check-label" htmlFor="termos">
-                        Aceito os <a href="#" className="text-primary">termos de uso</a> e 
-                        <a href="#" className="text-primary"> política de privacidade</a>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="d-grid mt-4">
-                    <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-                      {loading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                          Cadastrando...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-user-plus me-2"></i>
-                          Criar Conta de Vendedor
-                        </>
-                      )}
-                    </button>
                   </div>
                 </form>
-
-                <div className="text-center mt-4">
-                  <p className="text-muted">
-                    Já tem uma conta? <a href="/login" className="text-primary">Faça login</a>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="row mt-5">
-          <div className="col-lg-10 mx-auto">
-            <div className="row g-4 text-center">
-              <div className="col-md-4">
-                <div className="d-flex align-items-center justify-content-center">
-                  <i className="fas fa-shield-alt text-primary me-2 fs-4"></i>
-                  <span>Dados Seguros</span>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="d-flex align-items-center justify-content-center">
-                  <i className="fas fa-clock text-primary me-2 fs-4"></i>
-                  <span>Aprovação Rápida</span>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="d-flex align-items-center justify-content-center">
-                  <i className="fas fa-headset text-primary me-2 fs-4"></i>
-                  <span>Suporte 24/7</span>
-                </div>
               </div>
             </div>
           </div>

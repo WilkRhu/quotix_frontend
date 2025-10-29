@@ -21,11 +21,16 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => {
     carregarConfiguracoes()
-  }, [])
+  }, [token])
 
   const carregarConfiguracoes = async () => {
+    if (!token) {
+      setLoading(false)
+      return
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/api/lojas/me`, {
+      const response = await fetch(`${API_BASE_URL}/api/api/lojas/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
@@ -48,7 +53,7 @@ export default function ConfiguracoesPage() {
     setMessage('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/lojas/me/vendedor-avulso`, {
+      const response = await fetch(`${API_BASE_URL}/api/api/lojas/me/vendedor-avulso`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -102,6 +107,24 @@ export default function ConfiguracoesPage() {
           <div className={`alert alert-${messageType === 'success' ? 'success' : 'danger'} mb-4`}>
             <i className={`fas fa-${messageType === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2`}></i>
             {message}
+          </div>
+        )}
+
+        {config.aceitaVendedorAvulso && (
+          <div className="card mb-4 border-success">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-shrink-0">
+                  <i className="fas fa-check-circle text-success fa-2x"></i>
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h6 className="mb-1">Vendedores Avulsos Ativados</h6>
+                  <p className="mb-0 text-muted">
+                    Sua loja está aceitando vendedores avulsos com comissão de <strong>{config.comissaoVendedorAvulso}%</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

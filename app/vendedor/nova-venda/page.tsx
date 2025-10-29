@@ -33,6 +33,10 @@ interface TipoCotacao {
   comissaoVendasPercentual?: number | string | null
   comissaoVendasValor?: number | string | null
   anoMinimoVeiculo?: number
+  loja?: {
+    id: string
+    nome: string
+  }
 }
 
 type TaxaAdesaoModo = 'padrao' | 'manual' | 'nenhuma'
@@ -555,16 +559,40 @@ export default function NovaVenda() {
   }, [resumoCalculo, formData.valorVeiculo])
 
   const tiposCotacaoFiltrados = useMemo(() => {
-    if (!formData.ano) return tiposCotacao
+    let filtrados = tiposCotacao
     
-    const anoVeiculo = parseInt(formData.ano)
-    if (isNaN(anoVeiculo)) return tiposCotacao
+    // Filtrar por tipo de veículo
+    if (formData.tipoVeiculo) {
+      const tipoVeiculoLower = formData.tipoVeiculo.toLowerCase()
+      filtrados = filtrados.filter(tipo => {
+        if (!tipo.tipoVeiculo) return true
+        const tiposCotacaoLower = tipo.tipoVeiculo.toLowerCase()
+        
+        const mapeamento: { [key: string]: string[] } = {
+          'carro': ['carros', 'carro', 'automovel', 'automóvel'],
+          'moto': ['motos', 'moto', 'motocicleta'],
+          'caminhão': ['caminhoes', 'caminhão', 'caminhao', 'truck'],
+          'ônibus': ['onibus', 'ônibus', 'bus']
+        }
+        
+        const tiposCompativeis = mapeamento[tipoVeiculoLower] || [tipoVeiculoLower]
+        return tiposCompativeis.some(t => tiposCotacaoLower.includes(t))
+      })
+    }
     
-    return tiposCotacao.filter(tipo => {
-      if (!tipo.anoMinimoVeiculo) return true
-      return anoVeiculo >= tipo.anoMinimoVeiculo
-    })
-  }, [tiposCotacao, formData.ano])
+    // Filtrar por ano mínimo
+    if (formData.ano) {
+      const anoVeiculo = parseInt(formData.ano)
+      if (!isNaN(anoVeiculo)) {
+        filtrados = filtrados.filter(tipo => {
+          if (!tipo.anoMinimoVeiculo) return true
+          return anoVeiculo >= tipo.anoMinimoVeiculo
+        })
+      }
+    }
+    
+    return filtrados
+  }, [tiposCotacao, formData.tipoVeiculo, formData.ano])
 
 
 
@@ -690,6 +718,14 @@ export default function NovaVenda() {
                   <div className="alert alert-info">
                     <i className="fas fa-info-circle me-2"></i>
                     <strong>Informação:</strong> A comissão será calculada automaticamente baseada na taxa definida pela loja.
+                    {tiposCotacao.some(tipo => tipo.loja) && (
+                      <div className="mt-2">
+                        <small>
+                          <i className="fas fa-handshake me-1"></i>
+                          Como vendedor avulso, você pode trabalhar com múltiplas lojas.
+                        </small>
+                      </div>
+                    )}
                   </div>
 
                   <form onSubmit={handleSubmit}>
@@ -754,7 +790,12 @@ export default function NovaVenda() {
                             id="tipoVeiculo"
                             name="tipoVeiculo"
                             value={formData.tipoVeiculo}
-                            onChange={handleInputChange}
+                            onChange={(e) => {
+                              handleInputChange(e)
+                              if (formData.tipoCotacaoLojaId) {
+                                setFormData(prev => ({ ...prev, tipoCotacaoLojaId: '' }))
+                              }
+                            }}
                             required
                           >
                             <option value="">Selecione...</option>
@@ -884,13 +925,29 @@ export default function NovaVenda() {
                       </div>
                     )}
 
-                    {formData.ano && tiposCotacaoFiltrados.length < tiposCotacao.length && (
+                    {(formData.tipoVeiculo || formData.ano) && tiposCotacaoFiltrados.length < tiposCotacao.length && (
                       <div className="row">
                         <div className="col-12">
                           <div className="alert alert-warning">
                             <i className="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Atenção:</strong> Alguns tipos de cotação não estão disponíveis para veículos do ano {formData.ano}. 
-                            Apenas cotações compatíveis são exibidas abaixo.
+                            <strong>Atenção:</strong> Alguns tipos de cotação foram filtrados.
+                            {formData.tipoVeiculo && (
+                              <span> Mostrando apenas cotações para {formData.tipoVeiculo.toLowerCase()}s.</span>
+                            )}
+                            {formData.ano && (
+                              <span> Cotações disponíveis para veículos a partir do ano {formData.ano}.</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {tiposCotacao.some(tipo => tipo.loja) && (
+                      <div className="row">
+                        <div className="col-12">
+                          <div className="alert alert-info">
+                            <i className="fas fa-info-circle me-2"></i>
+                            <strong>Vendedor Avulso:</strong> Você tem acesso às cotações de {new Set(tiposCotacao.filter(t => t.loja).map(t => t.loja!.nome)).size} loja(s) que aceitam vendedores avulsos.
                           </div>
                         </div>
                       </div>
@@ -899,7 +956,19 @@ export default function NovaVenda() {
                     <div className="row">
                       <div className="col-12">
                         <div className="form-group">
-                          <label htmlFor="tipoCotacaoLojaId">Tipo de Cotação</label>
+                          <label htmlFor="tipoCotacaoLojaId">
+                            Tipo de Cotação
+                            {tiposCotacao.some(tipo => tipo.loja) && (
+                              <small className="text-muted ms-2">
+                                (Cotações de lojas que aceitam vendedor avulso)
+                              </small>
+                            )}
+                            {formData.tipoVeiculo && (
+                              <small className="text-info ms-2">
+                                - Filtrado para {formData.tipoVeiculo.toLowerCase()}s
+                              </small>
+                            )}
+                          </label>
                           <select
                             className="form-control"
                             id="tipoCotacaoLojaId"
@@ -907,10 +976,15 @@ export default function NovaVenda() {
                             value={formData.tipoCotacaoLojaId}
                             onChange={handleInputChange}
                           >
-                            <option value="">Selecione um tipo de cotação</option>
+                            <option value="">
+                              {tiposCotacao.some(tipo => tipo.loja) 
+                                ? 'Selecione uma cotação (múltiplas lojas disponíveis)'
+                                : 'Selecione um tipo de cotação'
+                              }
+                            </option>
                             {tiposCotacaoFiltrados.map((tipo) => (
                               <option key={tipo.id} value={tipo.id}>
-                                {tipo.nome} {tipo.descricao ? `- ${tipo.descricao}` : ''}
+                                {tipo.loja ? `[${tipo.loja.nome}] ` : ''}{tipo.nome} {tipo.descricao ? `- ${tipo.descricao}` : ''}
                                 {tipo.temTaxaAdesao && (
                                   <span className="text-muted">
                                     {tipo.taxaAdesaoTipo === 'valor' 
@@ -1017,7 +1091,14 @@ export default function NovaVenda() {
                             <div className="d-flex justify-content-between flex-wrap align-items-center mb-2">
                               <div>
                                 <h6 className="mb-0">Resumo do cálculo</h6>
-                                <small className="text-muted d-block">Tipo de cotação selecionado: {resumoCalculo.tipoCotacao.nome}</small>
+                                <small className="text-muted d-block">
+                                  Tipo de cotação: {resumoCalculo.tipoCotacao.nome}
+                                  {resumoCalculo.tipoCotacao.loja && (
+                                    <span className="badge bg-info text-dark ms-2">
+                                      {resumoCalculo.tipoCotacao.loja.nome}
+                                    </span>
+                                  )}
+                                </small>
                                 <small className="text-muted">Método de pagamento: {resumoCalculo.metodoPagamento === 'cartao' ? 'Cartão' : resumoCalculo.metodoPagamento === 'boleto' ? 'Boleto' : 'Pix'}</small>
                               </div>
                               <span className="badge bg-light text-dark">Valor do veículo: {formatCurrency(formData.valorVeiculo)}</span>
