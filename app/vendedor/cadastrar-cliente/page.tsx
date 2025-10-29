@@ -42,12 +42,82 @@ export default function CadastrarCliente() {
     estado: '',
     cep: ''
   })
+  const [loadingCep, setLoadingCep] = useState(false)
+
+  const formatCPF = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1')
+  }
+
+  const formatTelefone = (value: string) => {
+    const numbers = value.replace(/\D/g, '')
+    if (numbers.length <= 2) {
+      return numbers
+    } else if (numbers.length <= 7) {
+      return numbers.replace(/(\d{2})(\d+)/, '($1) $2')
+    } else if (numbers.length <= 10) {
+      return numbers.replace(/(\d{2})(\d{4})(\d+)/, '($1) $2-$3')
+    } else {
+      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+    }
+  }
+
+  const formatCEP = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .replace(/(-\d{3})\d+?$/, '$1')
+  }
+
+  const buscarCEP = async (cep: string) => {
+    const cepLimpo = cep.replace(/\D/g, '')
+    if (cepLimpo.length !== 8) return
+
+    setLoadingCep(true)
+    try {
+      const response = await axios.get(`https://viacep.com.br/ws/${cepLimpo}/json/`)
+      if (response.data && !response.data.erro) {
+        setFormData(prev => ({
+          ...prev,
+          rua: response.data.logradouro || '',
+          bairro: response.data.bairro || '',
+          cidade: response.data.localidade || '',
+          estado: response.data.uf || ''
+        }))
+        showToast('Endereço preenchido automaticamente!', 'success')
+      } else {
+        showToast('CEP não encontrado', 'warning')
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error)
+      showToast('Erro ao buscar CEP', 'error')
+    } finally {
+      setLoadingCep(false)
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    let formattedValue = value
+
+    if (name === 'cpf') {
+      formattedValue = formatCPF(value)
+    } else if (name === 'telefone') {
+      formattedValue = formatTelefone(value)
+    } else if (name === 'cep') {
+      formattedValue = formatCEP(value)
+      if (formattedValue.replace(/\D/g, '').length === 8) {
+        buscarCEP(formattedValue)
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: formattedValue
     }))
   }
 
@@ -150,6 +220,7 @@ export default function CadastrarCliente() {
                             value={formData.cpf}
                             onChange={handleInputChange}
                             placeholder="000.000.000-00"
+                            maxLength={14}
                             required
                           />
                         </div>
@@ -165,6 +236,7 @@ export default function CadastrarCliente() {
                             value={formData.telefone}
                             onChange={handleInputChange}
                             placeholder="(11) 99999-9999"
+                            maxLength={15}
                             required
                           />
                         </div>
@@ -190,15 +262,26 @@ export default function CadastrarCliente() {
                       <div className="col-md-6">
                         <div className="form-group">
                           <label htmlFor="cep">CEP</label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="cep"
-                            name="cep"
-                            value={formData.cep}
-                            onChange={handleInputChange}
-                            placeholder="00000-000"
-                          />
+                          <div className="input-group">
+                            <input
+                              type="text"
+                              className="form-control"
+                              id="cep"
+                              name="cep"
+                              value={formData.cep}
+                              onChange={handleInputChange}
+                              placeholder="00000-000"
+                              maxLength={9}
+                            />
+                            {loadingCep && (
+                              <div className="input-group-text">
+                                <div className="spinner-border spinner-border-sm" role="status">
+                                  <span className="visually-hidden">Buscando...</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <small className="form-text text-muted">Digite o CEP para preencher o endereço automaticamente</small>
                         </div>
                       </div>
                     </div>

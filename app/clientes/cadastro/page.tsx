@@ -41,6 +41,19 @@ export default function CadastrarCliente() {
     return cep.replace(/(\d{5})(\d{3})/, '$1-$2')
   }
 
+  const formatTelefone = (value: string) => {
+    const numbers = value.replace(/\D/g, '')
+    if (numbers.length <= 2) {
+      return numbers
+    } else if (numbers.length <= 7) {
+      return numbers.replace(/(\d{2})(\d+)/, '($1) $2')
+    } else if (numbers.length <= 10) {
+      return numbers.replace(/(\d{2})(\d{4})(\d+)/, '($1) $2-$3')
+    } else {
+      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+    }
+  }
+
   const buscarEnderecoPorCEP = async (cep: string) => {
     const cepLimpo = cep.replace(/\D/g, '')
     if (cepLimpo.length === 8) {
@@ -212,8 +225,9 @@ export default function CadastrarCliente() {
                             id="telefone"
                             name="telefone"
                             value={formData.telefone}
-                            onChange={handleInputChange}
+                            onChange={(e) => setFormData(prev => ({ ...prev, telefone: formatTelefone(e.target.value) }))}
                             placeholder="(11) 99999-9999"
+                            maxLength={15}
                             required
                           />
                         </div>

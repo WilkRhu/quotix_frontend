@@ -17,6 +17,16 @@ interface Cliente {
   role: string
   lojaId?: string
   createdAt: string
+  updatedAt?: string
+  telefone?: string
+  cpf?: string
+  cep?: string
+  rua?: string
+  numero?: string
+  bairro?: string
+  cidade?: string
+  estado?: string
+  foto?: string
 }
 
 interface VendaResumo {
@@ -40,11 +50,23 @@ export default function ListaClientes() {
   const [searchTerm, setSearchTerm] = useState('')
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
   const [modalMode, setModalMode] = useState<'view' | 'edit' | null>(null)
-  const [modalForm, setModalForm] = useState({ name: '', email: '' })
+  const [modalForm, setModalForm] = useState({ 
+    name: '', 
+    email: '', 
+    telefone: '', 
+    cpf: '', 
+    cep: '', 
+    rua: '', 
+    numero: '', 
+    bairro: '', 
+    cidade: '', 
+    estado: '' 
+  })
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [clienteVendas, setClienteVendas] = useState<VendaResumo[]>([])
   const [carregandoVendas, setCarregandoVendas] = useState(false)
+  const [uploadingFoto, setUploadingFoto] = useState(false)
 
   useEffect(() => {
     if (!token) {
@@ -63,14 +85,16 @@ export default function ListaClientes() {
 
     setLoading(true)
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/users/clientes`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          }
+      // Para vendedores, usar endpoint específico que retorna clientes do vendedor
+      const endpoint = user?.role === Role.SELLER 
+        ? `${API_BASE_URL}/api/vendedor/clientes`
+        : `${API_BASE_URL}/api/users/clientes`
+        
+      const response = await axios.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         }
-      )
+      })
       const data: Cliente[] = response.data
       setClientes(data)
     } catch (error: any) {
@@ -82,12 +106,44 @@ export default function ListaClientes() {
     }
   }
 
-  const abrirModal = (cliente: Cliente, modo: 'view' | 'edit') => {
+  const buscarDetalhesCliente = async (clienteId: string) => {
+    try {
+      const endpoint = user?.role === Role.SELLER 
+        ? `${API_BASE_URL}/api/vendedor/clientes/${clienteId}`
+        : `${API_BASE_URL}/api/users/${clienteId}`
+        
+      const response = await axios.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Erro ao buscar detalhes do cliente:', error)
+      return null
+    }
+  }
+
+  const abrirModal = async (cliente: Cliente, modo: 'view' | 'edit') => {
     setClienteSelecionado(cliente)
     setModalMode(modo)
+    
+    // Buscar detalhes completos do cliente para ambos os modos
+    const detalhes = await buscarDetalhesCliente(cliente.id)
+    const clienteCompleto = detalhes || cliente
+    
+    setClienteSelecionado(clienteCompleto)
     setModalForm({
-      name: cliente.name ?? '',
-      email: cliente.email ?? ''
+      name: clienteCompleto.name ?? '',
+      email: clienteCompleto.email ?? '',
+      telefone: clienteCompleto.telefone ?? '',
+      cpf: clienteCompleto.cpf ?? '',
+      cep: clienteCompleto.cep ?? '',
+      rua: clienteCompleto.rua ?? '',
+      numero: clienteCompleto.numero ?? '',
+      bairro: clienteCompleto.bairro ?? '',
+      cidade: clienteCompleto.cidade ?? '',
+      estado: clienteCompleto.estado ?? ''
     })
 
     if (modo === 'view') {
@@ -98,7 +154,18 @@ export default function ListaClientes() {
   const fecharModal = () => {
     setClienteSelecionado(null)
     setModalMode(null)
-    setModalForm({ name: '', email: '' })
+    setModalForm({ 
+      name: '', 
+      email: '', 
+      telefone: '', 
+      cpf: '', 
+      cep: '', 
+      rua: '', 
+      numero: '', 
+      bairro: '', 
+      cidade: '', 
+      estado: '' 
+    })
     setSaving(false)
     setClienteVendas([])
     setCarregandoVendas(false)
@@ -184,6 +251,37 @@ export default function ListaClientes() {
       showToast(mensagem, 'error')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleFotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !clienteSelecionado) return
+
+    setUploadingFoto(true)
+    try {
+      const formData = new FormData()
+      formData.append('foto', file)
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/users/${clienteSelecionado.id}/foto`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      )
+
+      setClienteSelecionado(prev => prev ? { ...prev, foto: response.data.foto } : null)
+      showToast('Foto atualizada com sucesso!', 'success')
+    } catch (error: any) {
+      console.error('Erro ao fazer upload da foto:', error)
+      const errorMessage = error.response?.data?.message || 'Erro ao fazer upload da foto'
+      showToast(errorMessage, 'error')
+    } finally {
+      setUploadingFoto(false)
     }
   }
 
@@ -283,6 +381,7 @@ export default function ListaClientes() {
                       <table className="table table-striped">
                         <thead>
                           <tr>
+                            <th>Foto</th>
                             <th>Nome</th>
                             <th>Email</th>
                             <th>Data de Cadastro</th>
@@ -292,13 +391,30 @@ export default function ListaClientes() {
                         <tbody>
                           {clientesFiltrados.length === 0 ? (
                             <tr>
-                              <td colSpan={4} className="text-center">
+                              <td colSpan={5} className="text-center">
                                 Nenhum cliente encontrado
                               </td>
                             </tr>
                           ) : (
                             clientesFiltrados.map((cliente) => (
                               <tr key={cliente.id}>
+                                <td>
+                                  {cliente.foto ? (
+                                    <img 
+                                      src={`${cliente.foto}`} 
+                                      alt="Foto do cliente" 
+                                      className="rounded-circle"
+                                      style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                    />
+                                  ) : (
+                                    <div 
+                                      className="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                                      style={{ width: '40px', height: '40px' }}
+                                    >
+                                      <i className="fas fa-user text-white"></i>
+                                    </div>
+                                  )}
+                                </td>
                                 <td>{cliente.name}</td>
                                 <td>{cliente.email}</td>
                                 <td>{new Date(cliente.createdAt).toLocaleDateString('pt-BR')}</td>
@@ -350,7 +466,7 @@ export default function ListaClientes() {
             style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
             onClick={fecharModal}
           >
-            <div className="modal-dialog" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-dialog modal-lg" onClick={(event) => event.stopPropagation()}>
               <div className="modal-content">
                 <div className="modal-header">
                   <h5 className="modal-title">
@@ -360,20 +476,50 @@ export default function ListaClientes() {
                 </div>
                 {modalMode === 'view' ? (
                   <div className="modal-body">
-                    <dl className="row mb-0">
-                      <dt className="col-sm-4">Nome</dt>
-                      <dd className="col-sm-8">{clienteSelecionado.name || '—'}</dd>
-                      <dt className="col-sm-4">Email</dt>
-                      <dd className="col-sm-8">{clienteSelecionado.email || '—'}</dd>
-                      <dt className="col-sm-4">Criado em</dt>
-                      <dd className="col-sm-8">{new Date(clienteSelecionado.createdAt).toLocaleString('pt-BR')}</dd>
-                      {clienteSelecionado.lojaId ? (
-                        <>
-                          <dt className="col-sm-4">Loja</dt>
-                          <dd className="col-sm-8">{clienteSelecionado.lojaId}</dd>
-                        </>
-                      ) : null}
-                    </dl>
+                    <div className="row">
+                      <div className="col-md-6">
+                        <h6 className="text-primary mb-3">Informações Pessoais</h6>
+                        <dl className="row">
+                          <dt className="col-sm-5">Nome Completo</dt>
+                          <dd className="col-sm-7">{clienteSelecionado.name || '—'}</dd>
+                          <dt className="col-sm-5">Email</dt>
+                          <dd className="col-sm-7">{clienteSelecionado.email || '—'}</dd>
+                          <dt className="col-sm-5">Telefone</dt>
+                          <dd className="col-sm-7">{clienteSelecionado.telefone || '—'}</dd>
+                          <dt className="col-sm-5">CPF</dt>
+                          <dd className="col-sm-7">{clienteSelecionado.cpf || '—'}</dd>
+                        </dl>
+                      </div>
+                      <div className="col-md-6">
+                        <h6 className="text-primary mb-3">Endereço</h6>
+                        <dl className="row">
+                          <dt className="col-sm-4">CEP</dt>
+                          <dd className="col-sm-8">{clienteSelecionado.cep || '—'}</dd>
+                          <dt className="col-sm-4">Rua</dt>
+                          <dd className="col-sm-8">{clienteSelecionado.rua || '—'}</dd>
+                          <dt className="col-sm-4">Número</dt>
+                          <dd className="col-sm-8">{clienteSelecionado.numero || '—'}</dd>
+                          <dt className="col-sm-4">Bairro</dt>
+                          <dd className="col-sm-8">{clienteSelecionado.bairro || '—'}</dd>
+                          <dt className="col-sm-4">Cidade</dt>
+                          <dd className="col-sm-8">{clienteSelecionado.cidade || '—'}</dd>
+                          <dt className="col-sm-4">Estado</dt>
+                          <dd className="col-sm-8">{clienteSelecionado.estado || '—'}</dd>
+                        </dl>
+                      </div>
+                    </div>
+                    
+                    <div className="row mt-3">
+                      <div className="col-12">
+                        <h6 className="text-primary mb-3">Informações do Sistema</h6>
+                        <dl className="row">
+                          <dt className="col-sm-3">Data de Cadastro</dt>
+                          <dd className="col-sm-3">{new Date(clienteSelecionado.createdAt).toLocaleString('pt-BR')}</dd>
+                          <dt className="col-sm-3">Última Atualização</dt>
+                          <dd className="col-sm-3">{clienteSelecionado.updatedAt ? new Date(clienteSelecionado.updatedAt).toLocaleString('pt-BR') : '—'}</dd>
+                        </dl>
+                      </div>
+                    </div>
 
                     <div className="mt-4 pt-3 border-top">
                       <h6 className="mb-3">Histórico de Compras</h6>
@@ -426,29 +572,188 @@ export default function ListaClientes() {
                 ) : (
                   <form onSubmit={handleSalvarCliente}>
                     <div className="modal-body">
-                      <div className="mb-3">
-                        <label htmlFor="modal-nome" className="form-label">Nome</label>
-                        <input
-                          id="modal-nome"
-                          name="name"
-                          type="text"
-                          className="form-control"
-                          value={modalForm.name}
-                          onChange={handleModalInputChange}
-                          required
-                        />
-                      </div>
-                      <div className="mb-3">
-                        <label htmlFor="modal-email" className="form-label">Email</label>
-                        <input
-                          id="modal-email"
-                          name="email"
-                          type="email"
-                          className="form-control"
-                          value={modalForm.email}
-                          onChange={handleModalInputChange}
-                          required
-                        />
+                      <div className="row">
+                        <div className="col-md-6">
+                          <h6 className="text-primary mb-3">Informações Pessoais</h6>
+                          
+                          <div className="mb-3 text-center">
+                            <div className="mb-2">
+                              {clienteSelecionado?.foto ? (
+                                <img 
+                                  src={`${clienteSelecionado.foto}`} 
+                                  alt="Foto do cliente" 
+                                  className="rounded-circle"
+                                  style={{ width: '80px', height: '80px', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                <div 
+                                  className="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto"
+                                  style={{ width: '80px', height: '80px' }}
+                                >
+                                  <i className="fas fa-user text-white fa-2x"></i>
+                                </div>
+                              )}
+                            </div>
+                            <input
+                              type="file"
+                              id="foto-upload"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={handleFotoUpload}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => document.getElementById('foto-upload')?.click()}
+                              disabled={uploadingFoto}
+                            >
+                              {uploadingFoto ? (
+                                <>
+                                  <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                                  Enviando...
+                                </>
+                              ) : (
+                                <>
+                                  <i className="fas fa-camera me-1"></i>
+                                  Alterar Foto
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          
+                          <div className="mb-3">
+                            <label htmlFor="modal-nome" className="form-label">Nome Completo</label>
+                            <input
+                              id="modal-nome"
+                              name="name"
+                              type="text"
+                              className="form-control"
+                              value={modalForm.name}
+                              onChange={handleModalInputChange}
+                              required
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label htmlFor="modal-email" className="form-label">Email</label>
+                            <input
+                              id="modal-email"
+                              name="email"
+                              type="email"
+                              className="form-control"
+                              value={modalForm.email}
+                              onChange={handleModalInputChange}
+                              required
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label htmlFor="modal-telefone" className="form-label">Telefone</label>
+                            <input
+                              id="modal-telefone"
+                              name="telefone"
+                              type="tel"
+                              className="form-control"
+                              value={modalForm.telefone}
+                              onChange={handleModalInputChange}
+                              placeholder="(11) 99999-9999"
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label htmlFor="modal-cpf" className="form-label">CPF</label>
+                            <input
+                              id="modal-cpf"
+                              name="cpf"
+                              type="text"
+                              className="form-control"
+                              value={modalForm.cpf}
+                              onChange={handleModalInputChange}
+                              placeholder="000.000.000-00"
+                            />
+                          </div>
+                        </div>
+                        <div className="col-md-6">
+                          <h6 className="text-primary mb-3">Endereço</h6>
+                          <div className="mb-3">
+                            <label htmlFor="modal-cep" className="form-label">CEP</label>
+                            <input
+                              id="modal-cep"
+                              name="cep"
+                              type="text"
+                              className="form-control"
+                              value={modalForm.cep}
+                              onChange={handleModalInputChange}
+                              placeholder="00000-000"
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label htmlFor="modal-rua" className="form-label">Rua</label>
+                            <input
+                              id="modal-rua"
+                              name="rua"
+                              type="text"
+                              className="form-control"
+                              value={modalForm.rua}
+                              onChange={handleModalInputChange}
+                            />
+                          </div>
+                          <div className="row">
+                            <div className="col-md-4">
+                              <div className="mb-3">
+                                <label htmlFor="modal-numero" className="form-label">Número</label>
+                                <input
+                                  id="modal-numero"
+                                  name="numero"
+                                  type="text"
+                                  className="form-control"
+                                  value={modalForm.numero}
+                                  onChange={handleModalInputChange}
+                                />
+                              </div>
+                            </div>
+                            <div className="col-md-8">
+                              <div className="mb-3">
+                                <label htmlFor="modal-bairro" className="form-label">Bairro</label>
+                                <input
+                                  id="modal-bairro"
+                                  name="bairro"
+                                  type="text"
+                                  className="form-control"
+                                  value={modalForm.bairro}
+                                  onChange={handleModalInputChange}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="row">
+                            <div className="col-md-8">
+                              <div className="mb-3">
+                                <label htmlFor="modal-cidade" className="form-label">Cidade</label>
+                                <input
+                                  id="modal-cidade"
+                                  name="cidade"
+                                  type="text"
+                                  className="form-control"
+                                  value={modalForm.cidade}
+                                  onChange={handleModalInputChange}
+                                />
+                              </div>
+                            </div>
+                            <div className="col-md-4">
+                              <div className="mb-3">
+                                <label htmlFor="modal-estado" className="form-label">Estado</label>
+                                <input
+                                  id="modal-estado"
+                                  name="estado"
+                                  type="text"
+                                  className="form-control"
+                                  value={modalForm.estado}
+                                  onChange={handleModalInputChange}
+                                  maxLength={2}
+                                  placeholder="SP"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div className="modal-footer">
