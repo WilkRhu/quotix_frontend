@@ -181,7 +181,7 @@ export default function PlanosTemplatesPage() {
                               <h6 className="mb-0">{template.nome}</h6>
                             </td>
                             <td>
-                              <span className="text-sm" dangerouslySetInnerHTML={{ __html: template.descricao }} />
+                              <span className="text-sm" dangerouslySetInnerHTML={{ __html: template.descricao || '' }} />
                             </td>
                             <td>
                               <span className={`badge ${(template as any).tipo === 'parceria' ? 'bg-warning' : 'bg-info'}`}>
