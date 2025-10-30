@@ -138,7 +138,7 @@ export default function PlanosVenda() {
                                 {pl.status}
                               </span>
                             </div>
-                            <div className="text-muted" dangerouslySetInnerHTML={{ __html: pl.descricao }} />
+                            <div className="text-muted" dangerouslySetInnerHTML={{ __html: pl.descricao || '' }} />
                           </div>
                           <div className="d-flex align-items-center gap-3">
                             {!pl.isTrial ? (
