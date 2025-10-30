@@ -222,7 +222,7 @@ export default function PlanosVendedor() {
                                 if (!planoAtivo) return true
                                 
                                 const niveis = { trial: 0, mensal: 1, trimestral: 2, semestral: 3, anual: 4, parceria: 5 }
-                                const nivelAtual = niveis[planoAtivo.periodo] || 0
+                                const nivelAtual = niveis[planoAtivo.periodo as keyof typeof niveis] || 0
                                 const templateAtual = planoAtivo.template as any
                                 
                                 // Se já teve plano pago, não pode trial ou parceria
