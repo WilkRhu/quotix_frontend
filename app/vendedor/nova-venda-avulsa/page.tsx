@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '../../../lib/api';
+import axios from 'axios';
+import { API_BASE_URL } from '../../../lib/api';
 import { useAuth } from '../../../stories/authStore';
 import VehicleImageUpload from '../../../components/VehicleImageUpload';
 import DashboardLayout from '../../../components/DashboardLayout';
@@ -18,7 +19,7 @@ interface Loja {
 
 export default function NovaVendaAvulsa() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [lojasAutorizadas, setLojasAutorizadas] = useState<Loja[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -45,7 +46,9 @@ export default function NovaVendaAvulsa() {
 
   const carregarLojasAutorizadas = async () => {
     try {
-      const response = await api.get('/vendedor/lojas-autorizadas');
+      const response = await axios.get(`${API_BASE_URL}/api/vendedor/lojas-autorizadas`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setLojasAutorizadas(response.data || []);
     } catch (error) {
       console.error('Erro ao carregar lojas autorizadas:', error);
@@ -67,7 +70,9 @@ export default function NovaVendaAvulsa() {
         imagensVeiculo,
       };
 
-      await api.post('/vendas-avulso', vendaData);
+      await axios.post(`${API_BASE_URL}/api/vendas-avulso`, vendaData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
       alert('Venda avulsa criada com sucesso!');
       router.push('/vendedor');
