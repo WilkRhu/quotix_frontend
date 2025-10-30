@@ -7,7 +7,7 @@ import DashboardLayout from '../../components/DashboardLayout'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { Role } from '../../types/auth'
 import { useAuth } from '../../stories/authStore'
-import { API_BASE_URL } from '../../lib/api'
+import { API_BASE_URL, UPLOAD_URL } from '../../lib/api'
 import { formatCurrency } from '../../lib/formatters'
 
 const SalesPerformanceCharts = dynamic(() => import('../../components/SalesPerformanceCharts'), {
@@ -18,6 +18,7 @@ export default function PerfilVendedor() {
   const { token, user } = useAuth()
   const [vendedor, setVendedor] = useState<any>(null)
   const [vendas, setVendas] = useState<any[]>([])
+  const [lojasAutorizadas, setLojasAutorizadas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [estatisticas, setEstatisticas] = useState({
     totalVendas: 0,
@@ -240,6 +241,17 @@ export default function PerfilVendedor() {
     }
   }
 
+  const carregarLojasAutorizadas = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/vendedor/lojas-autorizadas`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setLojasAutorizadas(response.data || [])
+    } catch (error) {
+      console.error('Erro ao carregar lojas autorizadas:', error)
+    }
+  }
+
   const totaisVendas = useMemo(() => {
     const vendasConfirmadas = vendas.filter(venda => venda.status === 'confirmada')
     return vendasConfirmadas.reduce(
@@ -374,7 +386,8 @@ export default function PerfilVendedor() {
           await Promise.all([
             carregarPerfil(),
             carregarVendas(),
-            carregarEstatisticas()
+            carregarEstatisticas(),
+            carregarLojasAutorizadas()
           ])
         } finally {
           setLoading(false)
@@ -530,6 +543,71 @@ export default function PerfilVendedor() {
         />
 
         {loading && <ChartsSkeleton />}
+
+        {vendedor?.tipoVendedor === 'avulso' && lojasAutorizadas.length > 0 && (
+          <div className="row mt-4">
+            <div className="col-12">
+              <div className="card">
+                <div className="card-header pb-0">
+                  <h6>Lojas que me Aceitaram</h6>
+                  <p className="text-sm mb-0">Lojas onde você está autorizado a vender</p>
+                </div>
+                <div className="card-body">
+                  <div className="row">
+                    {lojasAutorizadas.map((loja: any) => (
+                      <div key={loja.id} className="col-md-6 col-lg-4 mb-3">
+                        <div className="card h-100">
+                          <div className="card-body">
+                            <div className="d-flex align-items-center mb-3">
+                              {loja.logo ? (
+                                <img 
+                                  src={loja.logo} 
+                                  alt={loja.nome}
+                                  className="rounded-circle me-3"
+                                  style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                <div 
+                                  className="bg-gradient-primary rounded-circle me-3 d-flex align-items-center justify-content-center"
+                                  style={{ width: '50px', height: '50px' }}
+                                >
+                                  <i className="fas fa-store text-white"></i>
+                                </div>
+                              )}
+                              <div>
+                                <h6 className="mb-0">{loja.nome}</h6>
+                                <small className="text-muted">{loja.cidade}, {loja.estado}</small>
+                              </div>
+                            </div>
+                            {loja.comissaoNegociada && (
+                              <div className="mb-2">
+                                <span className="badge bg-gradient-success">
+                                  Comissão: {loja.comissaoNegociada}%
+                                </span>
+                              </div>
+                            )}
+                            <div className="d-flex justify-content-between align-items-center">
+                              <small className="text-muted">
+                                <i className="fas fa-envelope me-1"></i>
+                                {loja.email}
+                              </small>
+                              {loja.telefone && (
+                                <small className="text-muted">
+                                  <i className="fas fa-phone me-1"></i>
+                                  {loja.telefone}
+                                </small>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="row mt-4">
           <div className="col-12">

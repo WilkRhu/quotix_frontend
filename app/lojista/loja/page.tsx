@@ -102,7 +102,7 @@ export default function MinhaLoja() {
         cep: response.data.cep
       })
       if (response.data.logo) {
-        setLogoPreview(`${API_BASE_URL}/uploads/lojas/logomarcas/${response.data.logo}`)
+        setLogoPreview(response.data.logo)
       }
     } catch (error: any) {
       console.error('Erro ao carregar loja:', error)
