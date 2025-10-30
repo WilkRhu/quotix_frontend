@@ -1,10 +1,14 @@
+
 'use client'
+import DynamicVehicleImageUploadCards, { DynamicCard } from '../../../components/DynamicVehicleImageUploadCards'
+
 
 import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardLayout from '../../../components/DashboardLayout'
 import ProtectedRoute from '../../../components/ProtectedRoute'
+import { VehicleImagesByPart } from '../../../components/VehicleImageUploadCards'
 import { Role } from '../../../types/auth'
 import { useAuth } from '../../../stories/authStore'
 import { API_BASE_URL } from '../../../lib/api'
@@ -66,6 +70,7 @@ interface VendaData {
 }
 
 export default function NovaVenda() {
+  const [dynamicImageCards, setDynamicImageCards] = useState<DynamicCard[]>([])
   const { token, user } = useAuth()
   const { showToast } = useToast()
   const router = useRouter()
@@ -99,6 +104,16 @@ export default function NovaVenda() {
   const [fipeToastShown, setFipeToastShown] = useState(false)
   const [incompleteSaleToastShown, setIncompleteSaleToastShown] = useState(false)
   const [editingVendaId, setEditingVendaId] = useState<number | null>(null)
+  const [imagensVeiculo, setImagensVeiculo] = useState<string[]>([])
+  const [imagensVeiculoByPart, setImagensVeiculoByPart] = useState<VehicleImagesByPart>({
+    frente: [],
+    verso: [],
+    lado_direito: [],
+    lado_esquerdo: [],
+    painel_interno: [],
+    pneus: []
+  })
+  const [vendedorInfo, setVendedorInfo] = useState<any>(null)
 
   // Função para normalizar o tipo de veículo para corresponder às opções do select
   const normalizarTipoVeiculo = (tipo: string | undefined | null) => {
@@ -324,12 +339,40 @@ export default function NovaVenda() {
     }
   }
 
+  const buscarVendedorInfo = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/vendedor/perfil`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setVendedorInfo(response.data)
+    } catch (error) {
+      console.error('Erro ao buscar informações do vendedor:', error)
+    }
+  }
+
   useEffect(() => {
     if (token) {
       buscarClientes()
       buscarTiposCotacao()
+      buscarVendedorInfo()
     }
   }, [token])
+
+  // Criar cards pré-definidos apenas para carros
+  useEffect(() => {
+    if (formData.tipoVeiculo === 'Carro' && dynamicImageCards.length === 0) {
+      setDynamicImageCards([
+        { id: 1, title: 'Frente do Veículo', images: [] },
+        { id: 2, title: 'Traseira do Veículo', images: [] },
+        { id: 3, title: 'Lado Direito', images: [] },
+        { id: 4, title: 'Lado Esquerdo', images: [] },
+        { id: 5, title: 'Painel Interno', images: [] }
+      ])
+    } else if (formData.tipoVeiculo !== 'Carro' && formData.tipoVeiculo !== '') {
+      // Limpar cards se mudar para outro tipo de veículo
+      setDynamicImageCards([])
+    }
+  }, [formData.tipoVeiculo])
 
   const handleValorVeiculoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/\D/g, '')
@@ -645,14 +688,28 @@ export default function NovaVenda() {
         numeroParcelas: formData.numeroParcelas,
         metodoPagamento: formData.metodoPagamento,
         desconto,
-        vendedorId: user?.vendedorId || formData.vendedorId
+        vendedorId: user?.vendedorId || formData.vendedorId,
+        ...(vendedorInfo?.tipoVendedor === 'avulso' && { 
+          imagensVeiculo: dynamicImageCards.flatMap(card => card.images),
+          imagensVeiculoPorParte: dynamicImageCards.reduce((acc, card) => {
+            if (card.images.length > 0) {
+              acc[card.title] = card.images;
+            }
+            return acc;
+          }, {} as Record<string, string[]>),
+          lojaId: formData.tipoCotacaoLojaId ? tiposCotacao.find(t => t.id === formData.tipoCotacaoLojaId)?.loja?.id : undefined
+        })
       }
 
       let response
       if (editingVendaId) {
         // Atualizar venda existente
+        const endpoint = vendedorInfo?.tipoVendedor === 'avulso' 
+          ? `${API_BASE_URL}/api/vendas-avulso/${editingVendaId}`
+          : `${API_BASE_URL}/api/vendas/${editingVendaId}`
+        
         response = await axios.patch(
-          `${API_BASE_URL}/api/vendas/${editingVendaId}`,
+          endpoint,
           payload,
           {
             headers: {
@@ -664,8 +721,12 @@ export default function NovaVenda() {
         showToast('Venda pendente atualizada com sucesso!', 'success')
       } else {
         // Criar nova venda
+        const endpoint = vendedorInfo?.tipoVendedor === 'avulso'
+          ? `${API_BASE_URL}/api/vendas-avulso`
+          : `${API_BASE_URL}/api/vendas`
+        
         response = await axios.post(
-          `${API_BASE_URL}/api/vendas`,
+          endpoint,
           payload,
           {
             headers: {
@@ -675,20 +736,24 @@ export default function NovaVenda() {
           }
         )
         
-        // Processar pagamento fake
-        try {
-          const pagamentoResponse = await axios.post(
-            `${API_BASE_URL}/api/pagamentos/processar`,
-            {
-              vendaId: response.data.id,
-              metodoPagamento: formData.metodoPagamento,
-              valor: valorTotalVenda
-            }
-          )
-          
-          showToast(`Venda criada e pagamento processado! ID: ${pagamentoResponse.data.transactionId}`, 'success')
-        } catch (pagamentoError) {
-          showToast('Venda criada, mas erro no processamento do pagamento', 'warning')
+        if (vendedorInfo?.tipoVendedor === 'avulso') {
+          showToast('Venda avulsa criada com sucesso! Aguardando aprovação da loja.', 'success')
+        } else {
+          // Processar pagamento fake apenas para vendedores fixos
+          try {
+            const pagamentoResponse = await axios.post(
+              `${API_BASE_URL}/api/pagamentos/processar`,
+              {
+                vendaId: response.data.id,
+                metodoPagamento: formData.metodoPagamento,
+                valor: valorTotalVenda
+              }
+            )
+            
+            showToast(`Venda criada e pagamento processado! ID: ${pagamentoResponse.data.transactionId}`, 'success')
+          } catch (pagamentoError) {
+            showToast('Venda criada, mas erro no processamento do pagamento', 'warning')
+          }
         }
       }
       
@@ -926,6 +991,8 @@ export default function NovaVenda() {
                       </div>
                     )}
 
+
+
                     {(formData.tipoVeiculo || formData.ano) && tiposCotacaoFiltrados.length < tiposCotacao.length && (
                       <div className="row">
                         <div className="col-12">
@@ -1006,6 +1073,22 @@ export default function NovaVenda() {
                             ))}
                           </select>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Seção de Upload de Imagens por Partes */}
+                    <div className="row mb-4 mt-4">
+                      <div className="col-12">
+                        <h5 className="text-primary mb-3">Imagens do Veículo por Partes</h5>
+                        <hr />
+                        <DynamicVehicleImageUploadCards
+                          cards={dynamicImageCards}
+                          onCardsChange={setDynamicImageCards}
+                          maxCards={10}
+                          idVeiculo={formData.placa || 'temp'}
+                          tipoVeiculo={formData.tipoVeiculo}
+                          clienteId={formData.clienteId}
+                        />
                       </div>
                     </div>
 
@@ -1149,6 +1232,8 @@ export default function NovaVenda() {
                         </div>
                       </div>
                     )}
+
+
 
                     <div className="row mt-4">
                       <div className="col-12">

@@ -199,11 +199,27 @@ export default function PerfilVendedor() {
 
   const carregarVendas = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/vendedor/vendas`, {
+      // Carregar vendas regulares
+      const responseRegular = await axios.get(`${API_BASE_URL}/api/vendedor/vendas`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      const lista = Array.isArray(response.data) ? [...response.data] : []
-      const ordenadas = lista.sort((a, b) => {
+      
+      let todasVendas = Array.isArray(responseRegular.data) ? [...responseRegular.data] : []
+      
+      // Se for vendedor avulso, carregar também vendas avulsas
+      if (vendedor?.tipoVendedor === 'avulso') {
+        try {
+          const responseAvulso = await axios.get(`${API_BASE_URL}/api/vendas-avulso/minhas-vendas`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          const vendasAvulsas = Array.isArray(responseAvulso.data) ? responseAvulso.data.map(v => ({...v, isAvulso: true})) : []
+          todasVendas = [...todasVendas, ...vendasAvulsas]
+        } catch (error) {
+          console.error('Erro ao carregar vendas avulsas:', error)
+        }
+      }
+      
+      const ordenadas = todasVendas.sort((a, b) => {
         const dataA = new Date(a?.createdAt ?? 0).getTime()
         const dataB = new Date(b?.createdAt ?? 0).getTime()
         return dataB - dataA
@@ -220,13 +236,34 @@ export default function PerfilVendedor() {
         headers: { Authorization: `Bearer ${token}` }
       })
       const data = response.data ?? {}
-
-      setEstatisticas({
+      
+      let estatisticasFinais = {
         totalVendas: toNumber(data.totalVendas),
         vendasConfirmadas: toNumber(data.vendasConfirmadas),
         totalValorVendido: toNumber(data.totalValorVendido),
         totalComissao: toNumber(data.totalComissao)
-      })
+      }
+      
+      // Se for vendedor avulso, somar estatísticas das vendas avulsas
+      if (vendedor?.tipoVendedor === 'avulso') {
+        try {
+          const responseAvulso = await axios.get(`${API_BASE_URL}/api/vendas-avulso/totais/${user?.vendedorId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          const totaisAvulso = responseAvulso.data ?? {}
+          
+          estatisticasFinais = {
+            totalVendas: estatisticasFinais.totalVendas + toNumber(totaisAvulso.totalVendas),
+            vendasConfirmadas: estatisticasFinais.vendasConfirmadas + toNumber(totaisAvulso.vendasConfirmadas),
+            totalValorVendido: estatisticasFinais.totalValorVendido + toNumber(totaisAvulso.valorTotal),
+            totalComissao: estatisticasFinais.totalComissao + toNumber(totaisAvulso.comissaoTotal)
+          }
+        } catch (error) {
+          console.error('Erro ao carregar estatísticas avulsas:', error)
+        }
+      }
+
+      setEstatisticas(estatisticasFinais)
 
       if (!vendas.length && Array.isArray(data.vendas) && data.vendas.length) {
         const ordenadas = [...data.vendas].sort((a, b) => {
@@ -383,8 +420,8 @@ export default function PerfilVendedor() {
       const carregarDados = async () => {
         setLoading(true)
         try {
+          await carregarPerfil()
           await Promise.all([
-            carregarPerfil(),
             carregarVendas(),
             carregarEstatisticas(),
             carregarLojasAutorizadas()
@@ -395,7 +432,7 @@ export default function PerfilVendedor() {
       }
       carregarDados()
     }
-  }, [token])
+  }, [token, vendedor?.tipoVendedor])
 
   const saudacao = vendedor?.loja?.nome ? `Dashboard / ${vendedor.loja.nome}` : 'Dashboard / Vendas';
 
@@ -609,79 +646,7 @@ export default function PerfilVendedor() {
           </div>
         )}
 
-        <div className="row mt-4">
-          <div className="col-12">
-            <div className="card">
-              <div className="card-header pb-0">
-                <h6>Minhas Vendas</h6>
-              </div>
-              <div className="card-body">
-                <div className="table-responsive">
-                  <table className="table align-items-center mb-0">
-                    <thead>
-                      <tr>
-                        <th>Cliente</th>
-                        <th>Veículo</th>
-                        <th>Valor</th>
-                        <th>Comissão</th>
-                        <th>Status</th>
-                        <th>Data</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vendas.map((venda: any) => (
-                        <tr key={venda.id}>
-                          <td>
-                            <div>
-                              <h6 className="mb-0">{venda.cliente?.name}</h6>
-                              <small className="text-muted">{venda.cliente?.email}</small>
-                            </div>
-                          </td>
-                          <td>
-                            <div>
-                              <h6 className="mb-0">{venda.marca} {venda.modelo}</h6>
-                              <small className="text-muted">{venda.ano}</small>
-                            </div>
-                          </td>
-                          <td>{formatMoney(obterValorVenda(venda))}</td>
-                          <td>
-                            {(() => {
-                              const commissionInfo = getCommissionInfo(venda)
 
-                              return (
-                                <div>
-                                  <strong>{formatMoney(commissionInfo.valor)}</strong>
-                                  {commissionInfo.percentLabel && (
-                                    <small className="text-muted d-block">
-                                      {commissionInfo.percentLabel} do valor da venda
-                                    </small>
-                                  )}
-                                  {commissionInfo.descricao && !commissionInfo.percentLabel && (
-                                    <small className="text-muted d-block">{commissionInfo.descricao}</small>
-                                  )}
-                                </div>
-                              )
-                            })()}
-                          </td>
-                          <td>
-                            <span className={`badge badge-sm ${
-                              venda.status === 'confirmada' ? 'bg-gradient-success' :
-                              venda.status === 'pendente' ? 'bg-gradient-warning' :
-                              'bg-gradient-danger'
-                            }`}>
-                              {venda.status}
-                            </span>
-                          </td>
-                          <td>{new Date(venda.createdAt).toLocaleDateString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </DashboardLayout>
     </ProtectedRoute>
   )

@@ -31,6 +31,7 @@ const adminMenuItems: MenuItem[] = [
   { href: '/admin/usuarios', icon: 'fas fa-users-cog', label: 'Usuários Lojistas' },
   { href: '/admin/vendedores', icon: 'fas fa-user-tie', label: 'Vendedores' },
   { href: '/admin/planos-venda', icon: 'fas fa-file-invoice-dollar', label: 'Planos de Venda' },
+  { href: '/admin/planos-vendedor', icon: 'fas fa-star', label: 'Planos Vendedor' },
   { href: '/admin/adesao-planos', icon: 'fas fa-handshake', label: 'Adesão aos Planos' },
   { href: '/admin/cotacoes', icon: 'fas fa-calculator', label: 'Cotações' },
   { href: '/vendas', icon: 'fas fa-chart-line', label: 'Vendas' },
@@ -63,6 +64,7 @@ const getVendedorMenuItems = (badge: number): MenuItem[] => [
       { href: '/vendedor/vendas', label: 'Histórico' }
     ]
   },
+  { href: '/vendedor/planos', icon: 'fas fa-star', label: 'Meus Planos' },
 ]
 
 const getLojistaMenuItems = (aceitaVendedorAvulso: boolean): MenuItem[] => {
