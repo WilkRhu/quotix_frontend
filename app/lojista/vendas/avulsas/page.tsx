@@ -19,7 +19,7 @@ export default function VendasAvulsasPage() {
 
   const carregarVendas = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/lojas/me/vendas/avulsas`, {
+      const response = await fetch(`${API_BASE_URL}/api/api/lojas/me/vendas/avulsas`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
