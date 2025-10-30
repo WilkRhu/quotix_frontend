@@ -308,7 +308,7 @@ export default function PaymentModal({ show, onClose, template, token, onSuccess
                           disabled={!!isInvalidMove(period.period)}
                         >
                           {period.label} - {formatCurrency(period.price)}
-                          {isInvalidMove(period.period) && ` (${getInvalidMessage(isInvalidMove(period.period))})`}
+                          {isInvalidMove(period.period) && ` (${getInvalidMessage(isInvalidMove(period.period) as string)})`}
                         </option>
                       ))}
                     </select>
