@@ -19,6 +19,7 @@ export default function PerfilVendedor() {
   const [vendedor, setVendedor] = useState<any>(null)
   const [vendas, setVendas] = useState<any[]>([])
   const [lojasAutorizadas, setLojasAutorizadas] = useState<any[]>([])
+  const [vendasRejeitadas, setVendasRejeitadas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [estatisticas, setEstatisticas] = useState({
     totalVendas: 0,
@@ -214,6 +215,10 @@ export default function PerfilVendedor() {
           })
           const vendasAvulsas = Array.isArray(responseAvulso.data) ? responseAvulso.data.map(v => ({...v, isAvulso: true})) : []
           todasVendas = [...todasVendas, ...vendasAvulsas]
+
+          // Filtrar vendas rejeitadas/canceladas
+          const rejeitadas = vendasAvulsas.filter(v => v.status && v.status.toLowerCase().includes('cancel'))
+          setVendasRejeitadas(rejeitadas)
         } catch (error) {
           console.error('Erro ao carregar vendas avulsas:', error)
         }
@@ -496,9 +501,18 @@ export default function PerfilVendedor() {
                     </div>
                   </div>
                   <div className="col-4 text-end">
-                    <div className="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
-                      <i className="fas fa-user-tie text-lg opacity-10"></i>
-                    </div>
+                    {vendedor?.foto ? (
+                      <img
+                        src={vendedor.foto.startsWith('http') ? vendedor.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${vendedor.foto}`}
+                        alt="Foto do vendedor"
+                        className="rounded-circle shadow"
+                        style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div className="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                        <i className="fas fa-user-tie text-lg opacity-10"></i>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -571,6 +585,85 @@ export default function PerfilVendedor() {
             </div>
           </div>
         </div>
+
+        {/* Vendas aprovadas */}
+        {(() => {
+          const aprovadas = vendas.filter(v => v.status === 'confirmada')
+          if (aprovadas.length === 0) return null
+          return (
+            <div className="row mt-4">
+              <div className="col-12">
+                <div className="card border-success">
+                  <div className="card-header pb-0 bg-success text-white">
+                    <h6>Vendas Aprovadas</h6>
+                    <p className="text-sm mb-0">Últimas vendas aprovadas</p>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      {aprovadas.slice(0, 3).map((venda: any) => (
+                        <div key={venda.id} className="col-md-6 col-lg-4 mb-3">
+                          <div className="card h-100 border-success">
+                            <div className="card-body">
+                              <div className="mb-2">
+                                <span className="badge bg-success">Aprovada</span>
+                              </div>
+                              <h6 className="mb-1">{venda.marca} {venda.modelo} {venda.ano}</h6>
+                              <small className="text-muted">Cliente: {venda.cliente?.name || venda.clienteId}</small><br/>
+                              <small className="text-muted">Valor: {formatMoney(venda.valorSeguro)}</small><br/>
+                              <small className="text-muted">Data: {new Date(venda.createdAt).toLocaleDateString('pt-BR')}</small>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-center mt-3">
+                      <a href="/vendedor/vendas" className="btn btn-outline-success">Ver mais</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Vendas Avulsas Rejeitadas */}
+        {vendasRejeitadas.length > 0 && (
+          <div className="row mt-4">
+            <div className="col-12">
+              <div className="card border-danger">
+                <div className="card-header pb-0 bg-danger text-white">
+                  <h6>Vendas Avulsas Rejeitadas</h6>
+                  <p className="text-sm mb-0">Vendas que foram rejeitadas ou canceladas pelas lojas</p>
+                </div>
+                <div className="card-body">
+                  <div className="row">
+                    {vendasRejeitadas.map((venda: any) => (
+                      <div key={venda.id} className="col-md-6 col-lg-4 mb-3">
+                        <div className="card h-100 border-danger">
+                          <div className="card-body">
+                            <div className="mb-2">
+                              <span className="badge bg-danger">{venda.status}</span>
+                            </div>
+                            <h6 className="mb-1">{venda.marca} {venda.modelo} {venda.ano}</h6>
+                            <small className="text-muted">Loja: {venda.loja?.nome || venda.lojaId}</small><br/>
+                            <small className="text-muted">Valor: {formatMoney(venda.valorSeguro)}</small><br/>
+                            <small className="text-muted">Data: {new Date(venda.createdAt).toLocaleDateString('pt-BR')}</small>
+                            {venda.justificativaRejeicao && (
+                              <div className="mt-2">
+                                <span className="fw-bold text-danger">Motivo da rejeição:</span><br/>
+                                <span className="text-muted">{venda.justificativaRejeicao}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <SalesPerformanceCharts
           monthlyTotals={monthlyTotals}
@@ -645,6 +738,8 @@ export default function PerfilVendedor() {
             </div>
           </div>
         )}
+
+
 
 
       </DashboardLayout>

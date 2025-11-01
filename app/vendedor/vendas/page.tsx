@@ -13,10 +13,11 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '../../../stories/toastStore'
 
 export default function VendasVendedor() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const router = useRouter()
   const { showToast } = useToast()
   const [vendas, setVendas] = useState<any[]>([])
+  const [vendedor, setVendedor] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [inicio, setInicio] = useState('')
   const [fim, setFim] = useState('')
@@ -182,6 +183,17 @@ export default function VendasVendedor() {
     return 0
   }
 
+  const carregarPerfil = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/vendedor/perfil`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setVendedor(response.data)
+    } catch (error) {
+      console.error('Erro ao carregar perfil:', error)
+    }
+  }
+
   const carregarVendas = async (filtros: { inicio?: string; fim?: string } = {}) => {
     if (!token) {
       return;
@@ -192,24 +204,42 @@ export default function VendasVendedor() {
 
       const params: Record<string, string> = {};
       if (filtros.inicio) {
-        // Adiciona T00:00:00 para evitar problemas de fuso horário
         params.inicio = new Date(filtros.inicio + 'T00:00:00').toISOString();
       }
       if (filtros.fim) {
-        // Adiciona T23:59:59 para incluir todo o dia final
         const dataFim = new Date(filtros.fim + 'T00:00:00');
         dataFim.setHours(23, 59, 59, 999);
         params.fim = dataFim.toISOString();
       }
 
-      console.log('Fazendo requisição para vendas com params:', params);
-
-  const response = await axios.get(`${API_BASE_URL}/api/vendas/vendedor/vendas`, {
+      // Carregar vendas regulares
+      const responseRegular = await axios.get(`${API_BASE_URL}/api/vendedor/vendas`, {
         headers: { Authorization: `Bearer ${token}` },
         params,
       });
-      console.log('Resposta recebida:', response.data);
-      setVendas(response.data);
+      
+      let todasVendas = Array.isArray(responseRegular.data) ? [...responseRegular.data] : []
+      
+      // Se for vendedor avulso, carregar vendas do endpoint dedicado
+      if (vendedor?.tipoVendedor === 'avulso') {
+        try {
+          const responseAvulso = await axios.get(`${API_BASE_URL}/api/vendedor/vendas-avulso`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params,
+          })
+          const vendasAvulsas = Array.isArray(responseAvulso.data) ? responseAvulso.data.map(v => ({...v, isAvulso: true})) : []
+          todasVendas = [...todasVendas, ...vendasAvulsas]
+        } catch (error) {
+          console.error('Erro ao carregar vendas avulsas:', error)
+        }
+      }
+      
+      const ordenadas = todasVendas.sort((a, b) => {
+        const dataA = new Date(a?.createdAt ?? 0).getTime()
+        const dataB = new Date(b?.createdAt ?? 0).getTime()
+        return dataB - dataA
+      })
+      setVendas(ordenadas)
     } catch (error) {
       console.error('Erro ao carregar vendas:', error);
     } finally {
@@ -237,11 +267,9 @@ export default function VendasVendedor() {
       setActionLoadingId(id)
       setActionType(acao)
 
-      // Validação específica para confirmação: verificar se a placa está preenchida
       if (acao === 'confirmar') {
         const venda = vendas.find(v => v.id === id)
         if (!venda?.placa || venda.placa.trim() === '') {
-          // Em vez de bloquear, redirecionar para nova venda com dados pré-preenchidos
           const params = new URLSearchParams()
           
           if (venda?.clienteId) params.append('clienteId', venda.clienteId)
@@ -291,9 +319,18 @@ export default function VendasVendedor() {
 
   useEffect(() => {
     if (token) {
-      carregarVendas()
+      const carregarDados = async () => {
+        await carregarPerfil()
+      }
+      carregarDados()
     }
   }, [token])
+
+  useEffect(() => {
+    if (token && vendedor) {
+      carregarVendas()
+    }
+  }, [token, vendedor?.tipoVendedor])
 
   return (
     <ProtectedRoute requiredRoles={[Role.SELLER]}>

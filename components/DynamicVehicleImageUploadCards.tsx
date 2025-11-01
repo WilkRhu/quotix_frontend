@@ -5,6 +5,7 @@ export interface DynamicCard {
   id: number;
   title: string;
   images: string[];
+  imagesBase64?: string[];
 }
 
 interface DynamicVehicleImageUploadCardsProps {
@@ -42,29 +43,40 @@ export default function DynamicVehicleImageUploadCards({ cards, onCardsChange, m
 
     const filesToProcess = Array.from(files).slice(0, 2 - card.images.length);
     const currentImages = [...card.images];
+    const currentBase64 = card.imagesBase64 ? [...card.imagesBase64] : [];
 
     try {
       for (const file of filesToProcess) {
         // Criar preview imediato
         const previewUrl = URL.createObjectURL(file);
         currentImages.push(previewUrl);
-        
-        // Atualizar estado com preview
+
+        // Gerar base64
+        const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const base64 = await toBase64(file);
+        currentBase64.push(base64);
+
+        // Atualizar estado com preview e base64
         onCardsChange(cards.map(c => 
-          c.id === cardId ? { ...c, images: [...currentImages] } : c
+          c.id === cardId ? { ...c, images: [...currentImages], imagesBase64: [...currentBase64] } : c
         ));
 
         // Fazer upload
         const pasta = clienteId && idVeiculo ? `vendedores/${clienteId}/${idVeiculo}` : 'veiculos';
         const imageUrl = await uploadImage(file, pasta);
-        
+
         // Substituir preview pela URL real
         const index = currentImages.indexOf(previewUrl);
         if (index !== -1 && imageUrl) {
           URL.revokeObjectURL(previewUrl);
           currentImages[index] = imageUrl;
           onCardsChange(cards.map(c => 
-            c.id === cardId ? { ...c, images: [...currentImages] } : c
+            c.id === cardId ? { ...c, images: [...currentImages], imagesBase64: [...currentBase64] } : c
           ));
         }
       }

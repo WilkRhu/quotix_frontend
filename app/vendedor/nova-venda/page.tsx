@@ -641,6 +641,7 @@ export default function NovaVenda() {
 
 
   const handleSubmit = async (e: React.FormEvent) => {
+  // Log do payload para debug
     e.preventDefault()
 
     const placaSanitizada = (formData.placa || '')
@@ -653,7 +654,6 @@ export default function NovaVenda() {
       return
     }
 
-    // Validar ano mínimo se tipo de cotação selecionado
     if (formData.tipoCotacaoLojaId && formData.ano) {
       const tipoSelecionado = tiposCotacao.find(tipo => tipo.id === formData.tipoCotacaoLojaId)
       if (tipoSelecionado?.anoMinimoVeiculo) {
@@ -675,6 +675,8 @@ export default function NovaVenda() {
       const desconto = arredondar(formData.desconto)
 
       const payload = {
+  // ...existing code...
+  // Log do payload para debug
         clienteId: formData.clienteId,
         valorVeiculo,
         valorSeguro: valorTotalVenda,
@@ -690,13 +692,8 @@ export default function NovaVenda() {
         desconto,
         vendedorId: user?.vendedorId || formData.vendedorId,
         ...(vendedorInfo?.tipoVendedor === 'avulso' && { 
-          imagensVeiculo: dynamicImageCards.flatMap(card => card.images),
-          imagensVeiculoPorParte: dynamicImageCards.reduce((acc, card) => {
-            if (card.images.length > 0) {
-              acc[card.title] = card.images;
-            }
-            return acc;
-          }, {} as Record<string, string[]>),
+          imagensVeiculo: dynamicImageCards.flatMap(card => card.images.map(() => 'blob:placeholder')),
+          dadosBase64: dynamicImageCards.flatMap(card => card.imagesBase64 || []),
           lojaId: formData.tipoCotacaoLojaId ? tiposCotacao.find(t => t.id === formData.tipoCotacaoLojaId)?.loja?.id : undefined
         })
       }

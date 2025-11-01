@@ -30,7 +30,7 @@ export default function ConfiguracoesPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/api/lojas/me`, {
+      const response = await fetch(`${API_BASE_URL}/api/lojas/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       

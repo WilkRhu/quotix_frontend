@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../stories/authStore'
-import { API_BASE_URL } from '../lib/api'
+import { API_BASE_URL, UPLOAD_URL } from '../lib/api'
 import { resolveImageUrl } from '../lib/images'
 import { translateRole } from '../lib/roles'
 import { Role } from '../types/auth'
@@ -57,10 +57,11 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
             throw new Error('Falha ao carregar foto do vendedor')
           }
   
-          const fotoVendedor = user?.foto as string | undefined
-          if (isMounted) {
-             setAvatarUrl(fotoVendedor ? `${fotoVendedor}` : null)
-          }
+            const perfil = await response.json();
+            const fotoVendedor = perfil?.fotoVendedor || perfil?.foto || user?.foto;
+            if (isMounted) {
+              setAvatarUrl(fotoVendedor ? resolveImageUrl(fotoVendedor) : null);
+            }
         } catch (error) {
           if (isMounted) {
             setAvatarUrl(null)
@@ -134,7 +135,6 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
 
   const avatarSrc = useMemo(() => {
     if (avatarUrl) {
-      console.log(avatarUrl, "teste");
       return avatarUrl
     }
     return '/assets/img/team-2.jpg'
@@ -221,7 +221,7 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
                 onClick={() => setShowDropdown(!showDropdown)}
               >
                 <img 
-                  src={avatarSrc}
+                  src={`${avatarSrc}`}
                   alt="Avatar" 
                   className="avatar avatar-sm me-2"
                   style={{ width: '32px', height: '32px', borderRadius: '50%' }}

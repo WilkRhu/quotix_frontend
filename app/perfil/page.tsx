@@ -36,13 +36,14 @@ export default function Perfil() {
 
   useEffect(() => {
     async function fetchVendedor() {
-      if (user?.role === Role.SELLER && user?.id && token) {
+      if (user?.role === Role.SELLER && user?.vendedorId && token) {
         try {
-          const res = await fetch(`${API_BASE_URL}/api/vendedores/${user.id}`, {
+          const res = await fetch(`${API_BASE_URL}/api/vendedores/${user.vendedorId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           if (res.ok) {
             const data = await res.json()
+            console.log(data)
             setVendedor(data)
             setFotoVendedor(data?.foto || null)
           }
@@ -52,7 +53,7 @@ export default function Perfil() {
       }
     }
     fetchVendedor()
-  }, [user?.role, user?.id, token])
+  }, [user?.role, user?.vendedorId, token])
   
   useEffect(() => {
     if (user) {
@@ -214,13 +215,15 @@ export default function Perfil() {
               <div className="row gx-4">
                 <div className="col-auto">
                   <div className="avatar avatar-xl position-relative">
-                    {(fotoVendedor || user?.foto) ? (
+                    {(user?.role === Role.SELLER && fotoVendedor) ? (
                       <img
-                        src={
-                          fotoVendedor 
-                            ? (fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`)
-                            : (user?.foto?.startsWith('http') ? user.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${user?.foto}`)
-                        }
+                        src={fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`}
+                        alt="profile_image"
+                        className="w-100 border-radius-lg shadow-sm"
+                      />
+                    ) : user?.foto ? (
+                      <img
+                        src={user.foto.startsWith('http') ? user.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${user.foto}`}
                         alt="profile_image"
                         className="w-100 border-radius-lg shadow-sm"
                       />
@@ -281,13 +284,16 @@ export default function Perfil() {
                             className="rounded-circle shadow-sm"
                             style={{ width: '100px', height: '100px', objectFit: 'cover' }}
                           />
-                        ) : (fotoVendedor || user?.foto) ? (
+                        ) : (user?.role === Role.SELLER && fotoVendedor) ? (
                           <img
-                            src={
-                              fotoVendedor 
-                                ? (fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`)
-                                : (user?.foto?.startsWith('http') ? user.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${user?.foto}`)
-                            }
+                            src={fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`}
+                            alt="Foto atual"
+                            className="rounded-circle shadow-sm"
+                            style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                          />
+                        ) : user?.foto ? (
+                          <img
+                            src={user.foto.startsWith('http') ? user.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${user.foto}`}
                             alt="Foto atual"
                             className="rounded-circle shadow-sm"
                             style={{ width: '100px', height: '100px', objectFit: 'cover' }}
@@ -471,13 +477,16 @@ export default function Perfil() {
                       className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
                       style={{ width: '100px', height: '100px' }}
                     >
-                      {(fotoVendedor || user?.foto) ? (
+                      {(user?.role === Role.SELLER && fotoVendedor) ? (
                         <img
-                          src={
-                            fotoVendedor 
-                              ? (fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`)
-                              : (user?.foto?.startsWith('http') ? user.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${user?.foto}`)
-                          }
+                          src={fotoVendedor.startsWith('http') ? fotoVendedor : `${API_BASE_URL}/uploads/vendedores/fotos/${fotoVendedor}`}
+                          alt="Foto do perfil"
+                          className="rounded-circle"
+                          style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                        />
+                      ) : user?.foto ? (
+                        <img
+                          src={user.foto.startsWith('http') ? user.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${user.foto}`}
                           alt="Foto do perfil"
                           className="rounded-circle"
                           style={{ width: '100px', height: '100px', objectFit: 'cover' }}

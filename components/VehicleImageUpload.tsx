@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { uploadImage, resolveImageUrl } from '../lib/images';
+import { resolveImageUrl } from '../lib/images';
+import { API_BASE_URL } from '../lib/api';
 
 interface VehicleImageUploadProps {
-  onImagesChange: (images: string[]) => void;
+  onImagesChange: (images: any[]) => void;
   maxImages?: number;
   pasta?: string;
 }
@@ -14,7 +15,7 @@ export default function VehicleImageUpload({
   maxImages = 5,
   pasta = 'veiculos'
 }: VehicleImageUploadProps) {
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,13 +30,31 @@ export default function VehicleImageUpload({
     if (!files || images.length >= maxImages) return;
 
     setUploading(true);
-    const newImages: string[] = [];
+    const newImages: any[] = [];
 
     try {
       for (let i = 0; i < Math.min(files.length, maxImages - images.length); i++) {
         const file = files[i];
-        const imageUrl = await uploadImage(file, pasta);
-        newImages.push(imageUrl);
+        
+        // Converter para base64
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(',')[1]); // Remove prefixo data:image/...
+          };
+          reader.readAsDataURL(file);
+        });
+        
+        // Criar objeto com URL blob e dados base64
+        const blobUrl = URL.createObjectURL(file);
+        const imageData = {
+          url: blobUrl,
+          base64: base64,
+          name: file.name
+        };
+        
+        newImages.push(imageData);
       }
 
       const updatedImages = [...images, ...newImages];
@@ -65,19 +84,6 @@ export default function VehicleImageUpload({
           onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={e => { e.preventDefault(); handleFileSelect(e); }}
         >
-          {/* Preview das imagens dentro do card de upload */}
-          {images.length > 0 && (
-            <div className="mb-2 d-flex flex-wrap gap-2 justify-content-center">
-              {images.map((image, index) => (
-                <img
-                  key={index}
-                  src={resolveImageUrl(image)}
-                  alt={`Preview ${index + 1}`}
-                  style={{ width: 70, height: 70, objectFit: 'cover', borderRadius: 8, border: '1px solid #ddd' }}
-                />
-              ))}
-            </div>
-          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -112,7 +118,7 @@ export default function VehicleImageUpload({
             <div key={index} className="col-md-12 mb-3">
               <div className="card">
                 <img
-                  src={image}
+                  src={typeof image === 'string' ? resolveImageUrl(image) : image.url}
                   alt={`Veículo ${index + 1}`}
                   className="card-img-top"
                   style={{ height: '150px', objectFit: 'cover' }}

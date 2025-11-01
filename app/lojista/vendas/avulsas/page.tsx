@@ -19,13 +19,20 @@ export default function VendasAvulsasPage() {
 
   const carregarVendas = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/api/lojas/me/vendas/avulsas`, {
+      console.log('Fazendo requisição para:', `${API_BASE_URL}/api/lojas/me/vendas/avulsas`)
+      const response = await fetch(`${API_BASE_URL}/api/lojas/me/vendas/avulsas`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
+      console.log('Status da resposta:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('Dados recebidos:', data)
         setVendas(data)
+      } else {
+        const errorText = await response.text()
+        console.error('Erro na resposta:', response.status, errorText)
       }
     } catch (error) {
       console.error('Erro ao carregar vendas:', error)
@@ -33,6 +40,8 @@ export default function VendasAvulsasPage() {
       setLoading(false)
     }
   }
+
+
 
   const getStatusBadge = (status: string) => {
     const badges = {

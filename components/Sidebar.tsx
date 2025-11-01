@@ -150,7 +150,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     if ((user?.role === Role.LOJISTA || user?.role === Role.LOGIST) && token) {
       const fetchLojaConfig = async () => {
         try {
-          const response = await fetch(`${API_BASE_URL}/api/api/lojas/me`, {
+          const response = await fetch(`${API_BASE_URL}/api/lojas/me`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           if (response.ok) {

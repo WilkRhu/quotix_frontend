@@ -31,30 +31,27 @@ export default function DashboardLojista() {
   const [vendas, setVendas] = useState<any[]>([])
   const [vendedores, setVendedores] = useState<any[]>([])
   const [showAtribuirModal, setShowAtribuirModal] = useState(false)
+  const [showDetalhesModal, setShowDetalhesModal] = useState(false)
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [justificativaRejeicao, setJustificativaRejeicao] = useState('')
+  const [imagemSelecionada, setImagemSelecionada] = useState('')
+  const [indiceImagem, setIndiceImagem] = useState(0)
   const [vendaSelecionada, setVendaSelecionada] = useState<any>(null)
   const [atribuindoVendedor, setAtribuindoVendedor] = useState(false)
 
   const loadStats = useCallback(async () => {
-    console.log('=== DEBUG loadStats ===')
-    console.log('User:', user)
-    console.log('User lojaId:', user?.lojaId)
-    console.log('Token exists:', !!token)
-
     if (!token) {
-      console.log('Token não disponível')
       return
     }
 
-    // Tentar obter lojaId
     let lojaId = user?.lojaId
     if (!lojaId) {
-      console.log('User.lojaId não disponível, tentando buscar via API...')
       try {
         const lojaResponse = await fetch(`${API_BASE_URL}/api/lojas/me`, { headers: { Authorization: `Bearer ${token}` } })
         if (lojaResponse.ok) {
           const lojaData = await lojaResponse.json()
           lojaId = lojaData?.id
-          console.log('Loja encontrada via API:', lojaId)
         }
       } catch (error) {
         console.error('Erro ao buscar loja:', error)
@@ -62,62 +59,35 @@ export default function DashboardLojista() {
     }
 
     if (!lojaId) {
-      console.log('Não foi possível obter lojaId, pulando carregamento')
       return
     }
 
-            <div className="row mb-4">
-              <div className="col-12">
-                <div className="card card-profile">
-                  <div className="card-body p-3">
-                    <div className="row align-items-center g-3 g-lg-4">
-                      <div className="col-auto">
-                        <div className="avatar avatar-xl position-relative">
-                          <img
-                            src={lojaLogoUrl}
-                            alt={loja?.nome ? `Logo da ${loja.nome}` : 'Avatar da loja'}
-                            className="rounded-circle img-fluid border border-2 border-white"
-                            style={{ width: '74px', height: '74px', objectFit: 'cover' }}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-7 col-md-8">
-                        <h5 className="mb-1">
-                          {loja?.nome ?? 'Loja não cadastrada'}
-                        </h5>
-                        <p className="mb-0 text-sm text-muted">
-                          {lojaSubtitle}
-                        </p>
-                      </div>
-                      <div className="col-lg-3 col-md-4 text-md-end">
-                        <Link href="/lojista/loja" className="btn btn-sm btn-primary">
-                          <i className="fas fa-store me-2"></i>
-                          Gerenciar Loja
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
     try {
       const authHeaders = { Authorization: `Bearer ${token}` }
 
-      const [vendedoresRes, tiposRes, cotacoesRes, vendasRes] = await Promise.all([
+      const [vendedoresRes, tiposRes, cotacoesRes, vendasRes, vendasAvulsasRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/lojas/vendedores/loja/${lojaId}`, { headers: authHeaders }),
         fetch(`${API_BASE_URL}/api/lojas/${lojaId}/tipos-cotacao`, { headers: authHeaders }),
         fetch(`${API_BASE_URL}/api/lojas/${lojaId}/tipos-cotacao`, { headers: authHeaders }),
-        fetch(`${API_BASE_URL}/api/lojas/${lojaId}/vendas`, { headers: authHeaders })
+        fetch(`${API_BASE_URL}/api/lojas/${lojaId}/vendas`, { headers: authHeaders }),
+        fetch(`${API_BASE_URL}/api/lojas/me/vendas/avulsas`, { headers: authHeaders })
       ])
 
       const vendedores = vendedoresRes.ok ? await vendedoresRes.json() : []
       const tiposCotacao = tiposRes.ok ? await tiposRes.json() : []
       const cotacoes = cotacoesRes.ok ? await cotacoesRes.json() : []
       const vendasData = vendasRes?.ok ? await vendasRes.json() : []
+      const vendasAvulsas = vendasAvulsasRes?.ok ? await vendasAvulsasRes.json() : []
 
       setVendedores(Array.isArray(vendedores) ? vendedores : [])
       setCotacoes(Array.isArray(cotacoes) ? cotacoes : [])
-      setVendas(Array.isArray(vendasData) ? vendasData : [])
+      
+      // Combinar vendas regulares e avulsas
+      const todasVendas = [
+        ...(Array.isArray(vendasData) ? vendasData.map(v => ({...v, isAvulso: false})) : []),
+        ...(Array.isArray(vendasAvulsas) ? vendasAvulsas.map(v => ({...v, isAvulso: true})) : [])
+      ]
+      setVendas(todasVendas)
 
       setStats({
         totalVendedores: vendedores.length,
@@ -126,7 +96,6 @@ export default function DashboardLojista() {
         cotacoesAtivas: cotacoes.filter((c: any) => c.ativo).length
       })
 
-      // Carregar informações da loja se o usuário tiver lojaId
       if (user?.lojaId) {
         try {
           const lojaRes = await axios.get(`${API_BASE_URL}/api/lojas/${user.lojaId}`, {
@@ -181,52 +150,78 @@ export default function DashboardLojista() {
 
   const handleAprovarVenda = async (venda: any) => {
     setVendaSelecionada(venda)
-    setShowAtribuirModal(true)
+    
+    // Se for venda avulsa, aprovar diretamente sem atribuir vendedor
+    if (venda.isAvulso) {
+      await aprovarVendaDiretamente(venda)
+    } else {
+      setShowAtribuirModal(true)
+    }
   }
 
-  const handleRejeitarVenda = async (vendaId: number) => {
+  const aprovarVendaDiretamente = async (venda: any) => {
     if (!token) {
       showToast('Token de autenticação não encontrado', 'error')
       return
     }
 
-    if (!confirm('Tem certeza que deseja rejeitar esta venda?')) {
+    try {
+      if (venda.isAvulso) {
+        await axios.patch(`${API_BASE_URL}/api/vendas-avulso/${venda.id}/status`, 
+          { status: 'confirmada' }, 
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+      } else {
+        await axios.patch(`${API_BASE_URL}/api/vendas/${venda.id}/aprovar`, 
+          {}, 
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+      }
+
+      await loadStats()
+      showToast('Venda aprovada com sucesso!', 'success')
+    } catch (error: any) {
+      console.error('Erro ao aprovar venda:', error)
+      const errorMessage = error?.response?.data?.message || 'Erro ao aprovar venda'
+      showToast(errorMessage, 'error')
+    }
+  }
+
+  const handleVerDetalhes = (venda: any) => {
+    setVendaSelecionada(venda)
+    setShowDetalhesModal(true)
+  }
+
+  const handleRejeitarVenda = async (venda: any) => {
+    setVendaSelecionada(venda)
+    setShowConfirmModal(true)
+  }
+
+  const confirmarRejeicao = async () => {
+    if (!token || !vendaSelecionada) {
+      showToast('Token de autenticação não encontrado', 'error')
       return
     }
-
-    console.log('Tentando rejeitar venda:', vendaId)
-
+    if (!justificativaRejeicao.trim()) {
+      showToast('Informe a justificativa da rejeição', 'error')
+      return
+    }
     try {
-      const response = await axios.patch(`${API_BASE_URL}/api/vendas/${vendaId}/cancelar`, {}, {
+      await axios.patch(`${API_BASE_URL}/api/vendas/${vendaSelecionada.id}/cancelar`, { justificativaRejeicao }, {
         headers: { Authorization: `Bearer ${token}` }
       })
-
-      console.log('Resposta da rejeição:', response)
-
-      // Recarregar os dados do servidor para garantir sincronização
+      setShowConfirmModal(false)
+      setJustificativaRejeicao('')
       await loadStats()
-
-      // Mostrar toast de sucesso
       showToast('Venda rejeitada com sucesso!', 'success')
     } catch (error: any) {
       console.error('Erro ao rejeitar venda:', error)
-      console.error('Status code:', error?.response?.status)
-      console.error('Response data:', error?.response?.data)
-      
       const errorMessage = error?.response?.data?.message || 'Erro ao rejeitar venda'
       showToast(errorMessage, 'error')
     }
   }
 
   const handleAtribuirVendedor = async (vendedorId?: string) => {
-    console.log('=== DEBUG handleAtribuirVendedor ===')
-    console.log('User:', user)
-    console.log('User role:', user?.role)
-    console.log('User lojaId:', user?.lojaId)
-    console.log('Token exists:', !!token)
-    console.log('Token length:', token?.length)
-    console.log('Venda selecionada:', vendaSelecionada)
-
     if (!token || !vendaSelecionada) {
       showToast('Erro interno', 'error')
       return
@@ -236,10 +231,8 @@ export default function DashboardLojista() {
 
     try {
       const payload = vendedorId ? { vendedorId } : {}
-      console.log('Payload:', payload)
-      console.log('API URL:', `${API_BASE_URL}/vendas/${vendaSelecionada.id}/atribuir-vendedor`)
 
-      const response = await axios.patch(
+      await axios.patch(
         `${API_BASE_URL}/api/vendas/${vendaSelecionada.id}/atribuir-vendedor`,
         payload,
         {
@@ -247,23 +240,12 @@ export default function DashboardLojista() {
         }
       )
 
-      console.log('Vendedor atribuído:', response)
-
-      // Recarregar os dados
       await loadStats()
-
-      // Fechar modal
       setShowAtribuirModal(false)
       setVendaSelecionada(null)
-
-      // Mostrar toast de sucesso
       showToast('Vendedor atribuído com sucesso! Ele tem 1 hora para entrar em contato.', 'success')
     } catch (error: any) {
       console.error('Erro ao atribuir vendedor:', error)
-      console.error('Status code:', error?.response?.status)
-      console.error('Response data:', error?.response?.data)
-      console.error('Response headers:', error?.response?.headers)
-
       const errorMessage = error?.response?.data?.message || 'Erro ao atribuir vendedor'
       showToast(errorMessage, 'error')
     } finally {
@@ -273,7 +255,17 @@ export default function DashboardLojista() {
 
   const handleFecharModal = () => {
     setShowAtribuirModal(false)
+    setShowDetalhesModal(false)
+    setShowImageModal(false)
+    setShowConfirmModal(false)
     setVendaSelecionada(null)
+    setImagemSelecionada('')
+  }
+
+  const handleAbrirImagem = (imagem: string | { urlImagem: string }, index: number = 0) => {
+    setImagemSelecionada(typeof imagem === 'string' ? imagem : imagem.urlImagem)
+    setIndiceImagem(index)
+    setShowImageModal(true)
   }
 
   const monthlyTotals = useMemo(() => {
@@ -381,25 +373,6 @@ export default function DashboardLojista() {
     ? `Últimas ${commissionTrend.labels.length} cotações`
     : 'Sem histórico'
 
-  const lojaLogoUrl = useMemo(() => {
-    if (loja?.logo) {
-      return `${API_BASE_URL}/uploads/lojas/logomarcas/${loja.logo}`
-    }
-    return '/assets/img/team-4.jpg'
-  }, [loja?.logo])
-
-  const lojaSubtitle = useMemo(() => {
-    if (loja?.cidade && loja?.estado) {
-      return `${loja.cidade} - ${loja.estado}`
-    }
-
-    if (loja?.endereco) {
-      return loja.endereco
-    }
-
-    return 'Atualize os dados da sua loja para personalizar o dashboard.'
-  }, [loja?.cidade, loja?.estado, loja?.endereco])
-
   return (
     <ProtectedRoute requiredRoles={[Role.LOJISTA, Role.LOGIST]}>
       <DashboardLayout title={`Dashboard Lojista${loja ? ` - ${loja.nome}` : ''}`}>
@@ -411,6 +384,7 @@ export default function DashboardLojista() {
             <span>Carregando dashboard e gráficos...</span>
           </div>
         )}
+        
         <div className="row">
           <div className="col-xl-3 col-sm-6 mb-xl-0 mb-4">
             <div className="card">
@@ -562,9 +536,20 @@ export default function DashboardLojista() {
                                 </span>
                               </td>
                               <td>
-                                <span className="text-sm">
-                                  {venda.vendedor?.name || 'Não atribuído'}
-                                </span>
+                                <div>
+                                  <span className="text-sm">
+                                    {venda.vendedor?.nome || venda.vendedor?.name || 'Não atribuído'}
+                                  </span>
+                                  {venda.isAvulso && (
+                                    <>
+                                      <br />
+                                      <small className="text-info">
+                                        <i className="fas fa-user-friends me-1"></i>
+                                        Avulso
+                                      </small>
+                                    </>
+                                  )}
+                                </div>
                               </td>
                               <td>
                                 <span className="text-sm">
@@ -573,6 +558,13 @@ export default function DashboardLojista() {
                               </td>
                               <td>
                                 <div className="btn-group btn-group-sm">
+                                  <button 
+                                    className="btn btn-outline-info btn-sm"
+                                    title="Ver detalhes"
+                                    onClick={() => handleVerDetalhes(venda)}
+                                  >
+                                    <i className="fas fa-eye"></i>
+                                  </button>
                                   <button 
                                     className="btn btn-outline-success btn-sm"
                                     title="Aprovar venda"
@@ -583,7 +575,7 @@ export default function DashboardLojista() {
                                   <button 
                                     className="btn btn-outline-danger btn-sm"
                                     title="Rejeitar venda"
-                                    onClick={() => handleRejeitarVenda(venda.id)}
+                                    onClick={() => handleRejeitarVenda(venda)}
                                   >
                                     <i className="fas fa-times"></i>
                                   </button>
@@ -611,86 +603,150 @@ export default function DashboardLojista() {
           trendBadgeLabel={trendBadgeLabel}
         />
 
-        {loading && (
-          <div className="row mt-4">
-            <div className="col-md-6 mb-4">
-              <div className="card h-100">
-                <div className="card-body">
-                  <div style={{ height: '300px', background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite' }}></div>
+        {/* Modal de Detalhes da Venda */}
+        {showDetalhesModal && vendaSelecionada && (
+          <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex={-1}>
+            <div className="modal-dialog modal-lg modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">
+                    <i className="fas fa-car me-2"></i>
+                    Detalhes da Venda
+                    {vendaSelecionada.isAvulso && (
+                      <span className="badge bg-info ms-2">Avulso</span>
+                    )}
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={handleFecharModal}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <div className="row">
+                    <div className="col-md-6">
+                      <h6 className="text-primary">Informações do Cliente</h6>
+                      <p className="mb-1"><strong>Nome:</strong> {vendaSelecionada.cliente?.name || 'N/A'}</p>
+                      <p className="mb-1"><strong>Email:</strong> {vendaSelecionada.clienteEmail || vendaSelecionada.cliente?.email || 'N/A'}</p>
+                      <p className="mb-3"><strong>Telefone:</strong> {vendaSelecionada.clienteTelefone || 'N/A'}</p>
+                      
+                      <h6 className="text-primary">Informações do Veículo</h6>
+                      <p className="mb-1"><strong>Tipo:</strong> {vendaSelecionada.tipoVeiculo}</p>
+                      <p className="mb-1"><strong>Marca:</strong> {vendaSelecionada.marca}</p>
+                      <p className="mb-1"><strong>Modelo:</strong> {vendaSelecionada.modelo}</p>
+                      <p className="mb-1"><strong>Ano:</strong> {vendaSelecionada.ano}</p>
+                      <p className="mb-3"><strong>Placa:</strong> {vendaSelecionada.placa || 'Não informada'}</p>
+                    </div>
+                    
+                    <div className="col-md-6">
+                      <h6 className="text-primary">Valores</h6>
+                      <p className="mb-1"><strong>Valor do Seguro:</strong> {formatCurrency(vendaSelecionada.valorSeguro)}</p>
+                      {vendaSelecionada.valorVeiculo && (
+                        <p className="mb-1"><strong>Valor do Veículo:</strong> {formatCurrency(vendaSelecionada.valorVeiculo)}</p>
+                      )}
+                      {vendaSelecionada.valorComissao && (
+                        <p className="mb-1"><strong>Comissão:</strong> {formatCurrency(vendaSelecionada.valorComissao)}</p>
+                      )}
+                      {vendaSelecionada.percentualComissao && (
+                        <p className="mb-3"><strong>% Comissão:</strong> {vendaSelecionada.percentualComissao}%</p>
+                      )}
+                      
+                      <h6 className="text-primary">Vendedor</h6>
+                      <p className="mb-1"><strong>Nome:</strong> {vendaSelecionada.vendedor?.nome || vendaSelecionada.vendedor?.name || 'Não atribuído'}</p>
+                      {vendaSelecionada.isAvulso && (
+                        <p className="mb-1"><strong>Tipo:</strong> <span className="text-info">Vendedor Avulso</span></p>
+                      )}
+                      
+                      <h6 className="text-primary mt-3">Outras Informações</h6>
+                      <p className="mb-1"><strong>Status:</strong> 
+                        <span className={`badge ms-2 ${
+                          vendaSelecionada.status === 'confirmada' ? 'bg-success' :
+                          vendaSelecionada.status === 'pendente' ? 'bg-warning' :
+                          'bg-danger'
+                        }`}>
+                          {vendaSelecionada.status}
+                        </span>
+                      </p>
+                      <p className="mb-1"><strong>Data:</strong> {new Date(vendaSelecionada.createdAt).toLocaleString('pt-BR')}</p>
+                      {vendaSelecionada.observacoes && (
+                        <p className="mb-1"><strong>Observações:</strong> {vendaSelecionada.observacoes}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Imagens do Veículo */}
+                  {vendaSelecionada.imagens && vendaSelecionada.imagens.length > 0 && (
+                    <div className="mt-4">
+                      <h6 className="text-primary">Imagens do Veículo</h6>
+                      <div className="row">
+                        {vendaSelecionada.imagens.map((imagem: any, index: number) => (
+                          <div key={index} className="col-md-4 col-sm-6 mb-3">
+                            <div className="card">
+                              <img 
+                                src={imagem.urlImagem || imagem}
+                                className="card-img-top" 
+                                alt={`Imagem ${index + 1} do veículo`}
+                                style={{ height: '200px', objectFit: 'cover', cursor: 'pointer' }}
+                                onClick={() => handleAbrirImagem(imagem.urlImagem || imagem)}
+                              />
+                              <div className="card-body p-2">
+                                <small className="text-muted">Imagem {index + 1}</small>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(!vendaSelecionada.imagensVeiculo || vendaSelecionada.imagensVeiculo.length === 0) && (
+                    <div className="mt-4">
+                      <div className="alert alert-info">
+                        <i className="fas fa-info-circle me-2"></i>
+                        Nenhuma imagem do veículo foi enviada pelo vendedor.
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleFecharModal}
+                  >
+                    Fechar
+                  </button>
+                  {vendaSelecionada.status === 'pendente' && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-success"
+                        onClick={() => {
+                          setShowDetalhesModal(false)
+                          handleAprovarVenda(vendaSelecionada)
+                        }}
+                      >
+                        <i className="fas fa-check me-2"></i>
+                        Aprovar Venda
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={() => {
+                          setShowDetalhesModal(false)
+                          handleRejeitarVenda(vendaSelecionada)
+                        }}
+                      >
+                        <i className="fas fa-times me-2"></i>
+                        Rejeitar Venda
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="col-md-6 mb-4">
-              <div className="card h-100">
-                <div className="card-body">
-                  <div style={{ height: '300px', background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)', backgroundSize: '200% 100%', animation: 'loading 1.5s infinite' }}></div>
-                </div>
-              </div>
-            </div>
-            <style>{`
-              @keyframes loading {
-                0% { background-position: 200% 0; }
-                100% { background-position: -200% 0; }
-              }
-            `}</style>
           </div>
         )}
-
-        <div className="row mt-4">
-          <div className="col-lg-6">
-            <div className="card">
-              <div className="card-header pb-0">
-                <h6>Ações Rápidas</h6>
-              </div>
-              <div className="card-body">
-                <div className="d-grid gap-2">
-                  <Link href="/lojista/vendedores" className="btn btn-info">
-                    <i className="fas fa-users me-2"></i>
-                    Gerenciar Vendedores
-                  </Link>
-                  <Link href="/lojista/tipos-cotacao" className="btn btn-primary">
-                    <i className="fas fa-calculator me-2"></i>
-                    Criar Tipos de Cotação
-                  </Link>
-                  <Link href="/lojista/planos" className="btn btn-success">
-                    <i className="fas fa-box me-2"></i>
-                    Ver Planos
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-6">
-            <div className="card">
-              <div className="card-header pb-0">
-                <h6>Resumo da Loja</h6>
-              </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-6">
-                    <div className="text-center">
-                      <h4 className="text-primary">{stats.totalVendedores}</h4>
-                      <small className="text-muted">Vendedores Ativos</small>
-                    </div>
-                  </div>
-                  <div className="col-6">
-                    <div className="text-center">
-                      <h4 className="text-success">{stats.cotacoesAtivas}</h4>
-                      <small className="text-muted">Cotações Ativas</small>
-                    </div>
-                  </div>
-                </div>
-                <hr />
-                <div className="text-center">
-                  <small className="text-muted">
-                    Última atualização: {new Date().toLocaleString('pt-BR')}
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Modal de Atribuição de Vendedor */}
         {showAtribuirModal && vendaSelecionada && (
@@ -712,11 +768,6 @@ export default function DashboardLojista() {
                     <p className="mb-1"><strong>Cliente:</strong> {vendaSelecionada.cliente?.name}</p>
                     <p className="mb-1"><strong>Veículo:</strong> {vendaSelecionada.tipoVeiculo} {vendaSelecionada.marca} {vendaSelecionada.modelo}</p>
                     <p className="mb-1"><strong>Valor:</strong> {formatCurrency(vendaSelecionada.valorSeguro)}</p>
-                  </div>
-
-                  <div className="mb-3">
-                    <h6>Escolher Vendedor</h6>
-                    <p className="text-muted small">Selecione um vendedor específico ou deixe o sistema escolher automaticamente o mais disponível.</p>
                   </div>
 
                   <div className="d-grid gap-2">
@@ -764,12 +815,6 @@ export default function DashboardLojista() {
                       </select>
                     </div>
                   </div>
-
-                  <div className="alert alert-info mt-3">
-                    <i className="fas fa-info-circle me-2"></i>
-                    <strong>Importante:</strong> O vendedor terá 1 hora para entrar em contato com o cliente. 
-                    Caso não entre em contato dentro do prazo, a venda será reatribuída automaticamente.
-                  </div>
                 </div>
                 <div className="modal-footer">
                   <button
@@ -780,6 +825,133 @@ export default function DashboardLojista() {
                   >
                     Cancelar
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmação */}
+        {showConfirmModal && vendaSelecionada && (
+          <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex={-1}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title text-warning">
+                    <i className="fas fa-exclamation-triangle me-2"></i>
+                    Confirmar Rejeição
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={handleFecharModal}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <div className="alert alert-warning">
+                    <i className="fas fa-info-circle me-2"></i>
+                    <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                  </div>
+                  <p>Tem certeza que deseja rejeitar esta venda?</p>
+                  <div className="bg-light p-3 rounded mb-3">
+                    <p className="mb-1"><strong>Cliente:</strong> {vendaSelecionada.cliente?.name || 'N/A'}</p>
+                    <p className="mb-1"><strong>Veículo:</strong> {vendaSelecionada.tipoVeiculo} {vendaSelecionada.marca} {vendaSelecionada.modelo}</p>
+                    <p className="mb-0"><strong>Valor:</strong> {formatCurrency(vendaSelecionada.valorSeguro)}</p>
+                  </div>
+                  <div className="mb-3">
+                    <label htmlFor="justificativaRejeicao" className="form-label"><strong>Justificativa da rejeição</strong></label>
+                    <textarea
+                      id="justificativaRejeicao"
+                      className="form-control"
+                      value={justificativaRejeicao}
+                      onChange={e => setJustificativaRejeicao(e.target.value)}
+                      rows={3}
+                      placeholder="Descreva o motivo da rejeição..."
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleFecharModal}
+                  >
+                    <i className="fas fa-arrow-left me-2"></i>
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={confirmarRejeicao}
+                  >
+                    <i className="fas fa-times me-2"></i>
+                    Sim, Rejeitar Venda
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Lightbox para Imagens */}
+        {showImageModal && vendaSelecionada && vendaSelecionada.imagens && vendaSelecionada.imagens.length > 0 && (
+          <div 
+            className="modal fade show d-block" 
+            style={{ backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 1060 }} 
+            tabIndex={-1}
+            onClick={handleFecharModal}
+          >
+            <div className="modal-dialog modal-xl modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-content bg-transparent border-0">
+                <div className="modal-header border-0 pb-0 d-flex justify-content-end align-items-center">
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={handleFecharModal}
+                    style={{ filter: 'invert(1)' }}
+                  ></button>
+                </div>
+                <div className="modal-body text-center p-0 position-relative" style={{ minHeight: '80vh' }}>
+                  {vendaSelecionada.imagens.length > 1 && (
+                    <button
+                      type="button"
+                      className="btn position-absolute top-50 start-0 translate-middle-y"
+                      style={{ zIndex: 2, left: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' }}
+                      onClick={() => setIndiceImagem((prev) => prev > 0 ? prev - 1 : vendaSelecionada.imagens.length - 1)}
+                      disabled={vendaSelecionada.imagens.length <= 1}
+                    >
+                      <i className="fas fa-chevron-left" style={{ color: '#fff', fontSize: '1.5rem' }}></i>
+                    </button>
+                  )}
+                  <img 
+                    src={vendaSelecionada.imagens[indiceImagem].urlImagem || vendaSelecionada.imagens[indiceImagem]}
+                    className="img-fluid rounded"
+                    alt={`Imagem ${indiceImagem + 1} do veículo`}
+                    style={{ 
+                      maxHeight: '80vh', 
+                      maxWidth: '100%',
+                      objectFit: 'contain',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                    }}
+                  />
+                  {vendaSelecionada.imagens.length > 1 && (
+                    <button
+                      type="button"
+                      className="btn position-absolute top-50 end-0 translate-middle-y"
+                      style={{ zIndex: 2, right: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' }}
+                      onClick={() => setIndiceImagem((prev) => prev < vendaSelecionada.imagens.length - 1 ? prev + 1 : 0)}
+                      disabled={vendaSelecionada.imagens.length <= 1}
+                    >
+                      <i className="fas fa-chevron-right" style={{ color: '#fff', fontSize: '1.5rem' }}></i>
+                    </button>
+                  )}
+                </div>
+                <div className="modal-footer border-0 justify-content-center pt-2">
+                  <small className="text-white-50">
+                    <i className="fas fa-info-circle me-1"></i>
+                    {`Imagem ${indiceImagem + 1} de ${vendaSelecionada.imagens.length}`} — Clique fora da imagem ou no X para fechar
+                  </small>
                 </div>
               </div>
             </div>

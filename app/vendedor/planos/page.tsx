@@ -5,7 +5,6 @@ import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '../../../components/DashboardLayout'
 import ProtectedRoute from '../../../components/ProtectedRoute'
-import PaymentModal from '../../../components/PaymentModal'
 import { Role } from '../../../types/auth'
 import { useAuth } from '../../../stories/authStore'
 import { API_BASE_URL } from '../../../lib/api'
@@ -44,6 +43,15 @@ export default function PlanosVendedor() {
   const [loading, setLoading] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<PlanoTemplate | null>(null)
+  const [selectedPeriod, setSelectedPeriod] = useState<'mensal' | 'trimestral' | 'semestral' | 'anual'>('mensal')
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto'>('card')
+  const [paymentData, setPaymentData] = useState({
+    cardNumber: '',
+    cardName: '',
+    expiryDate: '',
+    cvv: '',
+    cpf: '',
+  })
 
   useEffect(() => {
     if (token) {
@@ -101,10 +109,95 @@ export default function PlanosVendedor() {
 
   const handleSelectPlan = (template: PlanoTemplate) => {
     setSelectedTemplate(template)
+    
+    // Definir período padrão baseado nos preços disponíveis (maior que 0)
+    if (template.precoMensal && template.precoMensal > 0) {
+      setSelectedPeriod('mensal')
+    } else if (template.precoTrimestral && template.precoTrimestral > 0) {
+      setSelectedPeriod('trimestral')
+    } else if (template.precoSemestral && template.precoSemestral > 0) {
+      setSelectedPeriod('semestral')
+    } else if (template.precoAnual && template.precoAnual > 0) {
+      setSelectedPeriod('anual')
+    }
+    
     setShowPaymentModal(true)
   }
 
+  const getSelectedPrice = () => {
+    if (!selectedTemplate) return 0
+    switch (selectedPeriod) {
+      case 'mensal': return selectedTemplate.precoMensal || 0
+      case 'trimestral': return selectedTemplate.precoTrimestral || 0
+      case 'semestral': return selectedTemplate.precoSemestral || 0
+      case 'anual': return selectedTemplate.precoAnual || 0
+      default: return 0
+    }
+  }
 
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '')
+    if (numbers.length <= 11) {
+      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+    }
+    return value
+  }
+
+  const handleCPFChange = (value: string) => {
+    const formatted = formatCPF(value)
+    setPaymentData({...paymentData, cpf: formatted})
+  }
+
+  const processPayment = async () => {
+    if (!selectedTemplate) return
+    
+    setLoading(true)
+    try {
+      const paymentResponse = await axios.post(`${API_BASE_URL}/api/payment-mock/process`, {
+        amount: getSelectedPrice(),
+        period: selectedPeriod,
+        method: paymentMethod,
+        paymentData: paymentData
+      })
+
+      if (paymentResponse.data.success) {
+        const response = paymentResponse.data;
+        
+        if (paymentMethod === 'card') {
+          // Cartão: ativar imediatamente
+          await axios.post(`${API_BASE_URL}/api/vendedor/ativar-plano`, { 
+            templateId: selectedTemplate.id,
+            period: selectedPeriod,
+            paymentId: response.paymentId
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          
+          showToast('Pagamento aprovado e plano ativado!', 'success')
+          setShowPaymentModal(false)
+          buscarPlanoAtivo()
+        } else if (paymentMethod === 'pix') {
+          // PIX: mostrar QR Code
+          showToast('PIX gerado! Escaneie o QR Code para pagar.', 'info')
+          // Aqui você pode abrir um modal com o QR Code
+          alert(`PIX Copia e Cola:\n${response.pixCode}\n\nExpira em: ${new Date(response.expiresAt).toLocaleString('pt-BR')}`)
+          setShowPaymentModal(false)
+        } else if (paymentMethod === 'boleto') {
+          // Boleto: mostrar código de barras
+          showToast('Boleto gerado! Verifique seu email.', 'info')
+          alert(`Código do Boleto:\n${response.boletoCode}\n\nVencimento: ${new Date(response.dueDate).toLocaleDateString('pt-BR')}`)
+          setShowPaymentModal(false)
+        }
+      } else {
+        showToast(paymentResponse.data.message || 'Pagamento recusado. Tente novamente.', 'error')
+      }
+    } catch (error) {
+      console.error('Erro no pagamento:', error)
+      showToast('Erro ao processar pagamento', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <ProtectedRoute requiredRoles={[Role.SELLER]}>
@@ -222,7 +315,7 @@ export default function PlanosVendedor() {
                                 if (!planoAtivo) return true
                                 
                                 const niveis = { trial: 0, mensal: 1, trimestral: 2, semestral: 3, anual: 4, parceria: 5 }
-                                const nivelAtual = 0
+                                const nivelAtual = niveis[planoAtivo.periodo] || 0
                                 const templateAtual = planoAtivo.template as any
                                 
                                 // Se já teve plano pago, não pode trial ou parceria
@@ -271,14 +364,109 @@ export default function PlanosVendedor() {
         </div>
 
         {/* Modal de Pagamento */}
-        <PaymentModal
-          show={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          template={selectedTemplate}
-          token={token || ''}
-          onSuccess={buscarPlanoAtivo}
-          planoAtivo={planoAtivo}
-        />
+        {showPaymentModal && selectedTemplate && (
+          <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">{selectedTemplate.isTrial ? 'Plano Trial' : `Pagamento - ${selectedTemplate.nome}`}</h5>
+                  <button 
+                    type="button" 
+                    className="btn-close"
+                    onClick={() => setShowPaymentModal(false)}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  {selectedTemplate.isTrial ? (
+                    <div className="text-center py-4">
+                      <i className="fas fa-gift fa-4x text-warning mb-3"></i>
+                      <h5>Plano Trial Ativado!</h5>
+                      <p className="text-muted">Você está ativando o plano trial, que oferece acesso gratuito por tempo limitado para testar todos os recursos da plataforma.</p>
+                      <div className="alert alert-info">
+                        <strong>Vantagens do Trial:</strong>
+                        <ul className="text-start mt-2">
+                          <li>✅ Sem cobrança</li>
+                          <li>✅ Acesso total aos recursos</li>
+                          <li>✅ Ativação imediata</li>
+                          <li>✅ Suporte prioritário</li>
+                        </ul>
+                        <p className="mt-2">Após o período de teste, escolha um plano para continuar usando a plataforma.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* ...existing code for payment modal... */}
+                    </>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary"
+                    onClick={() => setShowPaymentModal(false)}
+                  >
+                    Fechar
+                  </button>
+                  {selectedTemplate.isTrial ? (
+                    <button
+                      type="button"
+                      className="btn btn-success"
+                      onClick={async () => {
+                        setLoading(true);
+                        try {
+                          await axios.post(`${API_BASE_URL}/api/vendedor/ativar-plano`, {
+                            templateId: selectedTemplate.id,
+                            period: 'trial',
+                            paymentId: null
+                          }, {
+                            headers: { Authorization: `Bearer ${token}` }
+                          });
+                          showToast('Plano trial ativado com sucesso!', 'success');
+                          setShowPaymentModal(false);
+                          buscarPlanoAtivo();
+                        } catch (error) {
+                          showToast('Erro ao ativar trial', 'error');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                      ) : (
+                        <i className="fas fa-gift me-2"></i>
+                      )}
+                      Ativar Trial
+                    </button>
+                  ) : (
+                    <button 
+                      type="button" 
+                      className="btn btn-success"
+                      onClick={processPayment}
+                      disabled={loading || 
+                        (paymentMethod === 'card' && (!paymentData.cardNumber || !paymentData.cardName)) ||
+                        ((paymentMethod === 'pix' || paymentMethod === 'boleto') && !paymentData.cpf)
+                      }
+                    >
+                      {loading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2"></span>
+                          Processando...
+                        </>
+                      ) : (
+                        <>
+                          <i className={`fas ${paymentMethod === 'card' ? 'fa-credit-card' : paymentMethod === 'pix' ? 'fa-qrcode' : 'fa-barcode'} me-2`}></i>
+                          {paymentMethod === 'card' ? 'Pagar' : paymentMethod === 'pix' ? 'Gerar PIX' : 'Gerar Boleto'} {formatCurrency(getSelectedPrice())}
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </DashboardLayout>
     </ProtectedRoute>
   )
