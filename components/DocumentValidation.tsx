@@ -114,22 +114,50 @@ export default function DocumentValidation() {
                     </div>
 
                     <div className="mb-3">
-                      <img 
-                        src={documento.arquivo}
-                        alt={`Documento ${getTipoDocumento(documento.tipo)}`}
-                        className="img-fluid rounded border"
-                        style={{ maxHeight: '300px' }}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const link = document.createElement('a');
-                          link.href = documento.arquivo;
-                          link.textContent = 'Visualizar documento';
-                          link.className = 'btn btn-link';
-                          link.target = '_blank';
-                          target.parentNode?.appendChild(link);
-                        }}
-                      />
+                      <div className="row">
+                        {documento.arquivo && (
+                          <div className={documento.arquivoVerso ? 'col-6' : 'col-12'}>
+                            <h6 className="mb-2">Frente</h6>
+                            <img 
+                              src={documento.arquivo}
+                              alt={`${getTipoDocumento(documento.tipo)} - Frente`}
+                              className="img-fluid rounded border"
+                              style={{ maxHeight: '300px', width: '100%', objectFit: 'contain' }}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const link = document.createElement('a');
+                                link.href = documento.arquivo;
+                                link.textContent = 'Visualizar frente';
+                                link.className = 'btn btn-link';
+                                link.target = '_blank';
+                                target.parentNode?.appendChild(link);
+                              }}
+                            />
+                          </div>
+                        )}
+                        {documento.arquivoVerso && (
+                          <div className="col-6">
+                            <h6 className="mb-2">Verso</h6>
+                            <img 
+                              src={documento.arquivoVerso}
+                              alt={`${getTipoDocumento(documento.tipo)} - Verso`}
+                              className="img-fluid rounded border"
+                              style={{ maxHeight: '300px', width: '100%', objectFit: 'contain' }}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const link = document.createElement('a');
+                                link.href = documento.arquivoVerso;
+                                link.textContent = 'Visualizar verso';
+                                link.className = 'btn btn-link';
+                                link.target = '_blank';
+                                target.parentNode?.appendChild(link);
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="d-flex gap-2">
