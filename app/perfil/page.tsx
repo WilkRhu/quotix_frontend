@@ -36,14 +36,13 @@ export default function Perfil() {
 
   useEffect(() => {
     async function fetchVendedor() {
-      if (user?.role === Role.SELLER && user?.vendedorId && token) {
+      if (user?.role === Role.SELLER && user?.id && token) {
         try {
-          const res = await fetch(`${API_BASE_URL}/api/vendedores/${user.vendedorId}`, {
+          const res = await fetch(`${API_BASE_URL}/api/vendedores/${user.id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           if (res.ok) {
             const data = await res.json()
-            console.log(data)
             setVendedor(data)
             setFotoVendedor(data?.foto || null)
           }
@@ -53,7 +52,7 @@ export default function Perfil() {
       }
     }
     fetchVendedor()
-  }, [user?.role, user?.vendedorId, token])
+  }, [user?.role, user?.id, token])
   
   useEffect(() => {
     if (user) {
