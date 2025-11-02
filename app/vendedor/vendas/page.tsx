@@ -288,8 +288,8 @@ export default function VendasVendedor() {
       }
 
       await axios.patch(
-  `${API_BASE_URL}/api/vendas/${id}/${acao}`,
-        {},
+        `${API_BASE_URL}/api/vendas-avulso/${id}/status`,
+        { status: acao === 'confirmar' ? 'confirmada' : 'cancelada' },
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -452,9 +452,10 @@ export default function VendasVendedor() {
                               <span className={`badge badge-sm ${
                                 venda.status === 'confirmada' ? 'bg-gradient-success' :
                                 venda.status === 'pendente' ? 'bg-gradient-warning' :
+                                (venda.status === 'pendente_assinatura' && venda.statusOriginal === 'pendente') ? 'bg-gradient-info' :
                                 'bg-gradient-danger'
                               }`}>
-                                {venda.status}
+                                {(venda.status === 'pendente_assinatura' && venda.statusOriginal === 'pendente') ? 'Pendente de Assinatura' : venda.status}
                               </span>
                             </td>
                             <td>{new Date(venda.createdAt).toLocaleDateString('pt-BR')}</td>
@@ -494,6 +495,26 @@ export default function VendasVendedor() {
                                       <i className="fas fa-times"></i>
                                     )}
                                   </button>
+                                </div>
+                              ) : venda.status === 'pendente_assinatura' && venda.status !== 'cancelada' ? (
+                                <div className="d-inline-flex align-items-center gap-2">
+                                  <Link
+                                    href={`/vendas/${venda.id}/contrato`}
+                                    className="btn btn-info btn-sm px-2"
+                                    title="Assinar contrato"
+                                  >
+                                    <i className="fas fa-file-signature"></i> Assinar
+                                  </Link>
+                                </div>
+                              ) : (!venda.pagamentoRealizado && venda.contratoAssinado && venda.status !== 'cancelada') ? (
+                                <div className="d-inline-flex align-items-center gap-2">
+                                  <Link
+                                    href={`/vendas/${venda.id}/pagamento`}
+                                    className="btn btn-warning btn-sm px-2"
+                                    title="Realizar pagamento"
+                                  >
+                                    <i className="fas fa-credit-card"></i> Pagar
+                                  </Link>
                                 </div>
                               ) : (
                                 <span className="text-muted">—</span>

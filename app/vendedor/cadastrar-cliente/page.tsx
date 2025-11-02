@@ -5,6 +5,7 @@ import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '../../../components/DashboardLayout'
 import ProtectedRoute from '../../../components/ProtectedRoute'
+import ClienteDocumentUpload from '../../../components/ClienteDocumentUpload'
 import { Role } from '../../../types/auth'
 import { useAuth } from '../../../stories/authStore'
 import { API_BASE_URL } from '../../../lib/api'
@@ -29,6 +30,7 @@ export default function CadastrarCliente() {
   const { showToast } = useToast()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [clienteId, setClienteId] = useState<string | null>(null)
   const [formData, setFormData] = useState<ClienteData>({
     nome: '',
     email: '',
@@ -151,8 +153,8 @@ export default function CadastrarCliente() {
         }
       )
 
-      showToast('Cliente cadastrado com sucesso!', 'success')
-      router.push('/vendedor/nova-venda')
+      setClienteId(response.data.id)
+      showToast('Cliente cadastrado com sucesso! Agora você pode enviar os documentos.', 'success')
     } catch (error: any) {
       console.error('Erro ao cadastrar cliente:', error)
       const errorMessage = error.response?.data?.message || 'Erro ao cadastrar cliente'
@@ -365,32 +367,60 @@ export default function CadastrarCliente() {
 
                     <div className="row mt-4">
                       <div className="col-12">
-                        <button
-                          type="submit"
-                          className="btn btn-primary"
-                          disabled={loading}
-                        >
-                          {loading ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                              Cadastrando...
-                            </>
-                          ) : (
-                            'Cadastrar Cliente'
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-secondary ms-2"
-                          onClick={() => router.back()}
-                        >
-                          Cancelar
-                        </button>
+                        {!clienteId ? (
+                          <>
+                            <button
+                              type="submit"
+                              className="btn btn-primary"
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <>
+                                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                  Cadastrando...
+                                </>
+                              ) : (
+                                'Cadastrar Cliente'
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary ms-2"
+                              onClick={() => router.back()}
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <div className="d-flex gap-2">
+                            <button
+                              type="button"
+                              className="btn btn-success"
+                              onClick={() => router.push('/vendedor/nova-venda')}
+                            >
+                              Continuar para Nova Venda
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary"
+                              onClick={() => router.push('/vendedor/clientes')}
+                            >
+                              Ver Clientes
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </form>
                 </div>
               </div>
+              
+              {clienteId && (
+                <ClienteDocumentUpload 
+                  clienteId={clienteId}
+                  onUploadComplete={() => {}}
+                />
+              )}
             </div>
           </div>
         </div>

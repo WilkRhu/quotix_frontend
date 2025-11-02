@@ -101,6 +101,7 @@ export default function VendasAvulsasPage() {
                       <th>Veículo</th>
                       <th>Valor</th>
                       <th>Comissão</th>
+                      <th>Documentos</th>
                       <th>Status</th>
                       <th>Data</th>
                     </tr>
@@ -145,6 +146,19 @@ export default function VendasAvulsasPage() {
                               {venda.percentualComissao}%
                             </small>
                           </div>
+                        </td>
+                        <td>
+                          {venda.documentosAnexados ? (
+                            <span className="badge bg-success">
+                              <i className="fas fa-check me-1"></i>
+                              Anexados
+                            </span>
+                          ) : (
+                            <span className="badge bg-warning">
+                              <i className="fas fa-exclamation me-1"></i>
+                              Pendentes
+                            </span>
+                          )}
                         </td>
                         <td>
                           <span className={`badge ${getStatusBadge(venda.status)}`}>

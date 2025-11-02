@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import DashboardLayout from '../../../components/DashboardLayout'
 import ProtectedRoute from '../../../components/ProtectedRoute'
+import ClienteDocumentUpload from '../../../components/ClienteDocumentUpload'
 import { Role } from '../../../types/auth'
 import { useAuth } from '../../../stories/authStore'
 import { API_BASE_URL } from '../../../lib/api'
@@ -451,6 +452,11 @@ export default function ClientesLojista() {
                         </div>
                       )}
                     </div>
+                    
+                    <ClienteDocumentUpload 
+                      clienteId={clienteSelecionado.id}
+                      onUploadComplete={() => {}}
+                    />
                   </div>
                 ) : (
                   <form onSubmit={handleSalvarCliente}>
