@@ -23,6 +23,7 @@ interface PlanoTemplate {
   percentualPlataforma?: number
   isTrial: boolean
   status: 'ativo' | 'inativo'
+  periodo?: 'trial' | 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'parceria'
 }
 
 interface PlanoAtivo {
@@ -315,7 +316,9 @@ export default function PlanosVendedor() {
                                 if (!planoAtivo) return true
                                 
                                 const niveis = { trial: 0, mensal: 1, trimestral: 2, semestral: 3, anual: 4, parceria: 5 }
-                                const nivelAtual = niveis[planoAtivo.periodo] || 0
+                                type Periodo = keyof typeof niveis
+                                const periodo = planoAtivo.template.periodo as Periodo
+                                const nivelAtual = niveis[periodo] || 0
                                 const templateAtual = planoAtivo.template as any
                                 
                                 // Se já teve plano pago, não pode trial ou parceria
