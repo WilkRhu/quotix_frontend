@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { formatCurrency } from '../lib/formatters'
 import { useToast } from '../stories/toastStore'
+import { API_BASE_URL } from '@/lib/api'
 
 interface PagamentoModalProps {
   venda: any
@@ -59,7 +60,7 @@ export default function PagamentoModal({ venda, isOpen, onClose, onSuccess }: Pa
       }
 
       // Para cartão e boleto, processar diretamente
-      const response = await fetch('http://localhost:3001/api/api/pagamentos/processar', {
+      const response = await fetch(`${API_BASE_URL}/api/api/pagamentos/processar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
