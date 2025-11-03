@@ -22,6 +22,7 @@ interface Documento {
   arquivoVerso?: string;
   status: string;
   observacoes?: string;
+  createdAt?: string;
 }
 
 export default function DocumentUploadCards({ clienteId, onUploadComplete }: DocumentUploadCardsProps) {
@@ -542,7 +543,7 @@ export default function DocumentUploadCards({ clienteId, onUploadComplete }: Doc
                       )}
                       
                       <small className="text-muted mt-2 d-block">
-                        Enviado em: {new Date(documento.createdAt).toLocaleDateString()}
+                        Enviado em: {documento.createdAt ? new Date(documento.createdAt).toLocaleDateString() : '—'}
                       </small>
                     </div>
                   </div>
