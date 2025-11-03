@@ -889,7 +889,7 @@ export default function PerfilVendedor() {
         onSuccess={() => {
           if (vendaSelecionada?.id) {
             setVendasPagas(prev => {
-              const novoSet = new Set([...prev, vendaSelecionada.id])
+              const novoSet = new Set([...(Array.from(prev)), vendaSelecionada.id])
               localStorage.setItem('vendasPagas', JSON.stringify([...novoSet]))
               return novoSet
             })
