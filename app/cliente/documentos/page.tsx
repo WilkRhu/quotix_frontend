@@ -25,7 +25,7 @@ export default function ClienteDocumentosPage() {
           <div className="row">
             <div className="col-12">
               <DocumentUploadCards 
-                clienteId={user?.id || ''} 
+                clienteId={user?.id?.toString() || ''} 
                 onUploadComplete={() => {}} 
               />
             </div>
