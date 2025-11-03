@@ -38,7 +38,9 @@ export default function ContratoVendaPage() {
     setAssinando(true);
     setErro(null);
     try {
-      await axios.post(`${API_BASE_URL}/api/vendas-avulso/${params.id as string}/assinar-contrato`, {}, {
+      const id = params && (typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '');
+      if (!id) throw new Error('ID da venda não encontrado');
+      await axios.post(`${API_BASE_URL}/api/vendas-avulso/${id}/assinar-contrato`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAssinou(true);
