@@ -521,8 +521,8 @@ export default function VendasVendedor() {
                                     onClick={() => {
                                       console.log('Pagando venda ID:', venda.id)
                                       setVendasPagas(prev => {
-                                        const novoSet = new Set([...prev, venda.id])
-                                        localStorage.setItem('vendasPagas', JSON.stringify([...novoSet]))
+                                        const novoSet = new Set([...(Array.from(prev)), venda.id])
+                                        localStorage.setItem('vendasPagas', JSON.stringify(Array.from(novoSet)))
                                         return novoSet
                                       })
                                       showToast('Pagamento processado com sucesso!', 'success')
