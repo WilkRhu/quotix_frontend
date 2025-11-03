@@ -53,7 +53,7 @@ export default function ConfiguracoesPage() {
     setMessage('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/api/lojas/me/vendedor-avulso`, {
+      const response = await fetch(`${API_BASE_URL}/api/lojas/me/vendedor-avulso`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
