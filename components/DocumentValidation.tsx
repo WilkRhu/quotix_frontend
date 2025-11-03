@@ -9,6 +9,7 @@ interface Documento {
   id: string;
   tipo: string;
   arquivo: string;
+  arquivoVerso?: string;
   status: string;
   observacoes?: string;
   createdAt: string;
@@ -148,7 +149,7 @@ export default function DocumentValidation() {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
                                 const link = document.createElement('a');
-                                link.href = documento.arquivoVerso;
+                                link.href = documento.arquivoVerso || '';
                                 link.textContent = 'Visualizar verso';
                                 link.className = 'btn btn-link';
                                 link.target = '_blank';
