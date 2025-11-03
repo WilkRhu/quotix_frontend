@@ -37,7 +37,9 @@ export default function PagamentoVendaPage() {
     setPagando(true);
     setErro(null);
     try {
-      await axios.post(`${API_BASE_URL}/api/vendas-avulso/${params.id}/pagar`, {}, {
+      const id = params && (typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '');
+      if (!id) throw new Error('ID da venda não encontrado');
+      await axios.post(`${API_BASE_URL}/api/vendas-avulso/${id}/pagar`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPagou(true);
