@@ -220,7 +220,7 @@ export default function PerfilVendedor() {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      let todasVendas = []
+  let todasVendas: any[] = []
       
       // Se for vendedor avulso, carregar vendas avulsas
       if (vendedor?.tipoVendedor === 'avulso') {
