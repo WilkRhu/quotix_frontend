@@ -890,7 +890,7 @@ export default function PerfilVendedor() {
           if (vendaSelecionada?.id) {
             setVendasPagas(prev => {
               const novoSet = new Set([...(Array.from(prev)), vendaSelecionada.id])
-              localStorage.setItem('vendasPagas', JSON.stringify([...novoSet]))
+              localStorage.setItem('vendasPagas', JSON.stringify(Array.from(novoSet)))
               return novoSet
             })
             // Recarregar vendas para atualizar o status
