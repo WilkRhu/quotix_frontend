@@ -38,7 +38,7 @@ export default function ContratoVendaPage() {
     setAssinando(true);
     setErro(null);
     try {
-      await axios.post(`${API_BASE_URL}/api/vendas-avulso/${params.id}/assinar-contrato`, {}, {
+      await axios.post(`${API_BASE_URL}/api/vendas-avulso/${params.id as string}/assinar-contrato`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAssinou(true);
