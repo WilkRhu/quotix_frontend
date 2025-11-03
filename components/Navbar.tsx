@@ -72,7 +72,7 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
 
       if ((user.role === Role.LOJISTA || user.role === Role.LOGIST) && user.lojaId && token) {
         try {
-          const response = await fetch(`${API_BASE_URL}/api/api/lojas/${user.lojaId}`, {
+          const response = await fetch(`${API_BASE_URL}/api/lojas/${user.lojaId}`, {
             headers: {
               Authorization: `Bearer ${token}`
             }

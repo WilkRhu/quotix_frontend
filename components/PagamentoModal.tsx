@@ -59,7 +59,7 @@ export default function PagamentoModal({ venda, isOpen, onClose, onSuccess }: Pa
         return
       }
 
-      // Para cartão e boleto, processar diretamente
+     
       const response = await fetch(`${API_BASE_URL}/api/api/pagamentos/processar`, {
         method: 'POST',
         headers: {
@@ -96,7 +96,7 @@ export default function PagamentoModal({ venda, isOpen, onClose, onSuccess }: Pa
 
   const confirmarPix = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/api/pagamentos/processar', {
+      const response = await fetch(`${API_BASE_URL}/api/api/pagamentos/processar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

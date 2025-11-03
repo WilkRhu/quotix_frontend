@@ -161,7 +161,7 @@ export default function MinhaLoja() {
           ativo: true
         }
 
-        const response = await axios.post(`${API_BASE_URL}/api/api/lojas`, createData, {
+        const response = await axios.post(`${API_BASE_URL}/api/lojas`, createData, {
           headers: { Authorization: `Bearer ${token}` }
         })
 
@@ -171,7 +171,7 @@ export default function MinhaLoja() {
         if (logoFile) {
           const logoFormData = new FormData()
           logoFormData.append('logo', logoFile)
-          await axios.post(`${API_BASE_URL}/api/api/lojas/${novaLojaId}/logo`, logoFormData, {
+          await axios.post(`${API_BASE_URL}/api/lojas/${novaLojaId}/logo`, logoFormData, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data'
