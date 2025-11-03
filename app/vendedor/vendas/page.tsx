@@ -23,6 +23,13 @@ export default function VendasVendedor() {
   const [fim, setFim] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
   const [actionType, setActionType] = useState<'confirmar' | 'cancelar' | null>(null)
+  const [vendasPagas, setVendasPagas] = useState<Set<number>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('vendasPagas')
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    }
+    return new Set()
+  })
 
   const toNumber = (valor: unknown) => {
     if (typeof valor === 'number' && Number.isFinite(valor)) {
@@ -288,8 +295,8 @@ export default function VendasVendedor() {
       }
 
       await axios.patch(
-  `${API_BASE_URL}/api/vendas/${id}/${acao}`,
-        {},
+        `${API_BASE_URL}/api/vendas-avulso/${id}/status`,
+        { status: acao === 'confirmar' ? 'confirmada' : 'cancelada' },
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -452,9 +459,10 @@ export default function VendasVendedor() {
                               <span className={`badge badge-sm ${
                                 venda.status === 'confirmada' ? 'bg-gradient-success' :
                                 venda.status === 'pendente' ? 'bg-gradient-warning' :
+                                (venda.status === 'pendente_assinatura' && venda.statusOriginal === 'pendente') ? 'bg-gradient-info' :
                                 'bg-gradient-danger'
                               }`}>
-                                {venda.status}
+                                {(venda.status === 'pendente_assinatura' && venda.statusOriginal === 'pendente') ? 'Pendente de Assinatura' : venda.status}
                               </span>
                             </td>
                             <td>{new Date(venda.createdAt).toLocaleDateString('pt-BR')}</td>
@@ -493,6 +501,34 @@ export default function VendasVendedor() {
                                     ) : (
                                       <i className="fas fa-times"></i>
                                     )}
+                                  </button>
+                                </div>
+                              ) : venda.status === 'pendente_assinatura' && venda.status !== 'cancelada' ? (
+                                <div className="d-inline-flex align-items-center gap-2">
+                                  <Link
+                                    href={`/vendas/${venda.id}/contrato`}
+                                    className="btn btn-info btn-sm px-2"
+                                    title="Assinar contrato"
+                                  >
+                                    <i className="fas fa-file-signature"></i> Assinar
+                                  </Link>
+                                </div>
+                              ) : (!venda.pagamentoRealizado && venda.contratoAssinado && venda.status !== 'cancelada' && !vendasPagas.has(venda.id)) ? (
+                                <div className="d-inline-flex align-items-center gap-2">
+                                  <button
+                                    className="btn btn-warning btn-sm px-2"
+                                    title="Realizar pagamento"
+                                    onClick={() => {
+                                      console.log('Pagando venda ID:', venda.id)
+                                      setVendasPagas(prev => {
+                                        const novoSet = new Set([...prev, venda.id])
+                                        localStorage.setItem('vendasPagas', JSON.stringify([...novoSet]))
+                                        return novoSet
+                                      })
+                                      showToast('Pagamento processado com sucesso!', 'success')
+                                    }}
+                                  >
+                                    <i className="fas fa-credit-card"></i> Pagar
                                   </button>
                                 </div>
                               ) : (

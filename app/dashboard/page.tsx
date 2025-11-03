@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '../../components/DashboardLayout'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { Role } from '../../types/auth'
+import { API_BASE_URL } from '@/lib/api'
 
 export default function Dashboard() {
   const [apiStatus, setApiStatus] = useState<string>('Carregando...')
 
   useEffect(() => {
-    fetch('/api/health')
+    fetch(`${API_BASE_URL}api/health`)
       .then(res => res.json())
       .then(data => setApiStatus(data.message))
       .catch(() => setApiStatus('Erro ao conectar com a API'))

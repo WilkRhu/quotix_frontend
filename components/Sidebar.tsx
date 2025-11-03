@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../stories/authStore'
 import { Role } from '../types/auth'
 import { API_BASE_URL } from '../lib/api'
+import DocumentStatusIcon from './DocumentStatusIcon'
 
 interface SidebarProps {
   isOpen?: boolean
@@ -39,6 +40,7 @@ const adminMenuItems: MenuItem[] = [
 
 const clientMenuItems: MenuItem[] = [
   { href: '/cliente/painel', icon: 'fas fa-tachometer-alt', label: 'Painel' },
+  { href: '/cliente/documentos', icon: 'fas fa-star', label: 'Validação' },
   { href: '/cotacao', icon: 'fas fa-calculator', label: 'Cotação' },
   { href: '/historico', icon: 'fas fa-history', label: 'Histórico de Cotações' },
 ]
@@ -50,8 +52,8 @@ const getVendedorMenuItems = (badge: number): MenuItem[] => [
     label: 'Clientes',
     icon: 'fas fa-users',
     submenu: [
-      { href: '/clientes/cadastro', label: 'Cadastrar Cliente' },
-      { href: '/clientes/lista', label: 'Lista de Clientes' }
+      { href: '/vendedor/cadastrar-cliente', label: 'Cadastrar Cliente' },
+      { href: '/vendedor/clientes', label: 'Lista de Clientes' }
     ]
   },
   { href: '/vendedor/busca-fipe', icon: 'fas fa-search', label: 'Busca FIPE' },
@@ -64,7 +66,7 @@ const getVendedorMenuItems = (badge: number): MenuItem[] => [
       { href: '/vendedor/vendas', label: 'Histórico' }
     ]
   },
-  { href: '/vendedor/planos', icon: 'fas fa-star', label: 'Meus Planos' },
+  { href: '/vendedor/planos', icon: 'fas fa-box', label: 'Meus Planos' },
 ]
 
 const getLojistaMenuItems = (aceitaVendedorAvulso: boolean): MenuItem[] => {
@@ -79,6 +81,7 @@ const getLojistaMenuItems = (aceitaVendedorAvulso: boolean): MenuItem[] => {
   }
   
   baseItems.push(
+    { href: '/lojista/documentos', icon: 'fas fa-star', label: 'Validação' },
     {
       label: 'Vendas',
       icon: 'fas fa-chart-line',
@@ -290,7 +293,11 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                   onClick={handleNavigate}
                 >
                   <div className="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-                    <i className={`${item.icon} text-dark text-sm opacity-10`}></i>
+                    {item.label === 'Validação' && (user?.role === Role.CLIENT) ? (
+                      <DocumentStatusIcon className="text-sm" />
+                    ) : (
+                      <i className={`${item.icon} text-dark text-sm opacity-10`}></i>
+                    )}
                   </div>
                   <span className="nav-link-text ms-1">{item.label}</span>
                   {item.badge !== undefined && item.badge > 0 && (

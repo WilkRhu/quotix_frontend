@@ -24,7 +24,8 @@ export default function DashboardLojista() {
     totalVendedores: 0,
     totalTiposCotacao: 0,
     totalCotacoes: 0,
-    cotacoesAtivas: 0
+    cotacoesAtivas: 0,
+    vendasMes: 0
   })
   const [loja, setLoja] = useState<any>(null)
   const [cotacoes, setCotacoes] = useState<any[]>([])
@@ -81,19 +82,29 @@ export default function DashboardLojista() {
 
       setVendedores(Array.isArray(vendedores) ? vendedores : [])
       setCotacoes(Array.isArray(cotacoes) ? cotacoes : [])
-      
+
       // Combinar vendas regulares e avulsas
       const todasVendas = [
-        ...(Array.isArray(vendasData) ? vendasData.map(v => ({...v, isAvulso: false})) : []),
-        ...(Array.isArray(vendasAvulsas) ? vendasAvulsas.map(v => ({...v, isAvulso: true})) : [])
+        ...(Array.isArray(vendasData) ? vendasData.map(v => ({ ...v, isAvulso: false })) : []),
+        ...(Array.isArray(vendasAvulsas) ? vendasAvulsas.map(v => ({ ...v, isAvulso: true })) : [])
       ]
       setVendas(todasVendas)
+
+      // Calcular vendas do mês atual
+      const agora = new Date()
+      const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1)
+      const vendasDoMes = todasVendas.filter(venda => {
+        const dataVenda = new Date(venda.createdAt)
+        return dataVenda >= inicioMes && venda.status === 'confirmada'
+      })
+      const valorVendasMes = vendasDoMes.reduce((total, venda) => total + toNumber(venda.valorSeguro), 0)
 
       setStats({
         totalVendedores: vendedores.length,
         totalTiposCotacao: tiposCotacao.length,
         totalCotacoes: cotacoes.length,
-        cotacoesAtivas: cotacoes.filter((c: any) => c.ativo).length
+        cotacoesAtivas: cotacoes.filter((c: any) => c.ativo).length,
+        vendasMes: valorVendasMes
       })
 
       if (user?.lojaId) {
@@ -150,7 +161,7 @@ export default function DashboardLojista() {
 
   const handleAprovarVenda = async (venda: any) => {
     setVendaSelecionada(venda)
-    
+
     // Se for venda avulsa, aprovar diretamente sem atribuir vendedor
     if (venda.isAvulso) {
       await aprovarVendaDiretamente(venda)
@@ -167,13 +178,13 @@ export default function DashboardLojista() {
 
     try {
       if (venda.isAvulso) {
-        await axios.patch(`${API_BASE_URL}/api/vendas-avulso/${venda.id}/status`, 
-          { status: 'confirmada' }, 
+        await axios.patch(`${API_BASE_URL}/api/vendas-avulso/${venda.id}/status`,
+          { status: 'confirmada' },
           { headers: { Authorization: `Bearer ${token}` } }
         )
       } else {
-        await axios.patch(`${API_BASE_URL}/api/vendas/${venda.id}/aprovar`, 
-          {}, 
+        await axios.patch(`${API_BASE_URL}/api/vendas/${venda.id}/aprovar`,
+          {},
           { headers: { Authorization: `Bearer ${token}` } }
         )
       }
@@ -384,7 +395,7 @@ export default function DashboardLojista() {
             <span>Carregando dashboard e gráficos...</span>
           </div>
         )}
-        
+
         <div className="row">
           <div className="col-xl-3 col-sm-6 mb-xl-0 mb-4">
             <div className="card">
@@ -458,15 +469,15 @@ export default function DashboardLojista() {
                 <div className="row">
                   <div className="col-8">
                     <div className="numbers">
-                      <p className="text-sm mb-0 text-capitalize font-weight-bold">Total Cotações</p>
+                      <p className="text-sm mb-0 text-capitalize font-weight-bold">Vendas do Mês</p>
                       <h5 className="font-weight-bolder mb-0">
-                        {stats.totalCotacoes}
+                        {formatCurrency(stats.vendasMes)}
                       </h5>
                     </div>
                   </div>
                   <div className="col-4 text-end">
                     <div className="icon icon-shape bg-gradient-warning shadow text-center border-radius-md">
-                      <i className="fas fa-list text-lg opacity-10"></i>
+                      <i className="fas fa-money-bill-wave text-lg opacity-10"></i>
                     </div>
                   </div>
                 </div>
@@ -558,21 +569,21 @@ export default function DashboardLojista() {
                               </td>
                               <td>
                                 <div className="btn-group btn-group-sm">
-                                  <button 
+                                  <button
                                     className="btn btn-outline-info btn-sm"
                                     title="Ver detalhes"
                                     onClick={() => handleVerDetalhes(venda)}
                                   >
                                     <i className="fas fa-eye"></i>
                                   </button>
-                                  <button 
+                                  <button
                                     className="btn btn-outline-success btn-sm"
                                     title="Aprovar venda"
                                     onClick={() => handleAprovarVenda(venda)}
                                   >
                                     <i className="fas fa-check"></i>
                                   </button>
-                                  <button 
+                                  <button
                                     className="btn btn-outline-danger btn-sm"
                                     title="Rejeitar venda"
                                     onClick={() => handleRejeitarVenda(venda)}
@@ -629,7 +640,7 @@ export default function DashboardLojista() {
                       <p className="mb-1"><strong>Nome:</strong> {vendaSelecionada.cliente?.name || 'N/A'}</p>
                       <p className="mb-1"><strong>Email:</strong> {vendaSelecionada.clienteEmail || vendaSelecionada.cliente?.email || 'N/A'}</p>
                       <p className="mb-3"><strong>Telefone:</strong> {vendaSelecionada.clienteTelefone || 'N/A'}</p>
-                      
+
                       <h6 className="text-primary">Informações do Veículo</h6>
                       <p className="mb-1"><strong>Tipo:</strong> {vendaSelecionada.tipoVeiculo}</p>
                       <p className="mb-1"><strong>Marca:</strong> {vendaSelecionada.marca}</p>
@@ -637,7 +648,7 @@ export default function DashboardLojista() {
                       <p className="mb-1"><strong>Ano:</strong> {vendaSelecionada.ano}</p>
                       <p className="mb-3"><strong>Placa:</strong> {vendaSelecionada.placa || 'Não informada'}</p>
                     </div>
-                    
+
                     <div className="col-md-6">
                       <h6 className="text-primary">Valores</h6>
                       <p className="mb-1"><strong>Valor do Seguro:</strong> {formatCurrency(vendaSelecionada.valorSeguro)}</p>
@@ -650,20 +661,19 @@ export default function DashboardLojista() {
                       {vendaSelecionada.percentualComissao && (
                         <p className="mb-3"><strong>% Comissão:</strong> {vendaSelecionada.percentualComissao}%</p>
                       )}
-                      
+
                       <h6 className="text-primary">Vendedor</h6>
                       <p className="mb-1"><strong>Nome:</strong> {vendaSelecionada.vendedor?.nome || vendaSelecionada.vendedor?.name || 'Não atribuído'}</p>
                       {vendaSelecionada.isAvulso && (
                         <p className="mb-1"><strong>Tipo:</strong> <span className="text-info">Vendedor Avulso</span></p>
                       )}
-                      
+
                       <h6 className="text-primary mt-3">Outras Informações</h6>
-                      <p className="mb-1"><strong>Status:</strong> 
-                        <span className={`badge ms-2 ${
-                          vendaSelecionada.status === 'confirmada' ? 'bg-success' :
-                          vendaSelecionada.status === 'pendente' ? 'bg-warning' :
-                          'bg-danger'
-                        }`}>
+                      <p className="mb-1"><strong>Status:</strong>
+                        <span className={`badge ms-2 ${vendaSelecionada.status === 'confirmada' ? 'bg-success' :
+                            vendaSelecionada.status === 'pendente' ? 'bg-warning' :
+                              'bg-danger'
+                          }`}>
                           {vendaSelecionada.status}
                         </span>
                       </p>
@@ -673,7 +683,7 @@ export default function DashboardLojista() {
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Imagens do Veículo */}
                   {vendaSelecionada.imagens && vendaSelecionada.imagens.length > 0 && (
                     <div className="mt-4">
@@ -682,9 +692,9 @@ export default function DashboardLojista() {
                         {vendaSelecionada.imagens.map((imagem: any, index: number) => (
                           <div key={index} className="col-md-4 col-sm-6 mb-3">
                             <div className="card">
-                              <img 
+                              <img
                                 src={imagem.urlImagem || imagem}
-                                className="card-img-top" 
+                                className="card-img-top"
                                 alt={`Imagem ${index + 1} do veículo`}
                                 style={{ height: '200px', objectFit: 'cover', cursor: 'pointer' }}
                                 onClick={() => handleAbrirImagem(imagem.urlImagem || imagem)}
@@ -698,7 +708,7 @@ export default function DashboardLojista() {
                       </div>
                     </div>
                   )}
-                  
+
                   {(!vendaSelecionada.imagensVeiculo || vendaSelecionada.imagensVeiculo.length === 0) && (
                     <div className="mt-4">
                       <div className="alert alert-info">
@@ -896,9 +906,9 @@ export default function DashboardLojista() {
 
         {/* Modal Lightbox para Imagens */}
         {showImageModal && vendaSelecionada && vendaSelecionada.imagens && vendaSelecionada.imagens.length > 0 && (
-          <div 
-            className="modal fade show d-block" 
-            style={{ backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 1060 }} 
+          <div
+            className="modal fade show d-block"
+            style={{ backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 1060 }}
             tabIndex={-1}
             onClick={handleFecharModal}
           >
@@ -924,12 +934,12 @@ export default function DashboardLojista() {
                       <i className="fas fa-chevron-left" style={{ color: '#fff', fontSize: '1.5rem' }}></i>
                     </button>
                   )}
-                  <img 
+                  <img
                     src={vendaSelecionada.imagens[indiceImagem].urlImagem || vendaSelecionada.imagens[indiceImagem]}
                     className="img-fluid rounded"
                     alt={`Imagem ${indiceImagem + 1} do veículo`}
-                    style={{ 
-                      maxHeight: '80vh', 
+                    style={{
+                      maxHeight: '80vh',
                       maxWidth: '100%',
                       objectFit: 'contain',
                       boxShadow: '0 4px 20px rgba(0,0,0,0.5)'

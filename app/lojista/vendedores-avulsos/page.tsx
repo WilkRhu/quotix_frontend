@@ -177,6 +177,7 @@ export default function VendedoresAvulsosPage() {
                 <table className="table table-hover">
                   <thead>
                     <tr>
+                      <th>Foto</th>
                       <th>Vendedor</th>
                       <th>Contato</th>
                       <th>Localização</th>
@@ -187,6 +188,18 @@ export default function VendedoresAvulsosPage() {
                   <tbody>
                     {vendedoresAprovados.map((vendedor: any) => (
                       <tr key={vendedor.id}>
+                        <td>
+                          {vendedor.foto ? (
+                            <img
+                              src={vendedor.foto.startsWith('http') ? vendedor.foto : `${API_BASE_URL}/uploads/vendedores/fotos/${vendedor.foto}`}
+                              alt={vendedor.nome}
+                              className="rounded-circle"
+                              style={{ width: 48, height: 48, objectFit: 'cover', border: '2px solid #eee' }}
+                            />
+                          ) : (
+                            <span className="text-muted">Sem foto</span>
+                          )}
+                        </td>
                         <td>
                           <strong>{vendedor.nome}</strong>
                         </td>

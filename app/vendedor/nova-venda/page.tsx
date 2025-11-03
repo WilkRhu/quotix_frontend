@@ -1089,81 +1089,85 @@ export default function NovaVenda() {
                       </div>
                     </div>
 
-                    {/* Dados de Pagamento */}
-                    <div className="row mb-4 mt-4">
-                      <div className="col-12">
-                        <h5 className="text-primary">Dados de Pagamento</h5>
-                        <hr />
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <div className="col-md-4">
-                        <div className="form-group">
-                          <label htmlFor="metodoPagamento">Método de Pagamento *</label>
-                          <select
-                            className="form-control"
-                            id="metodoPagamento"
-                            name="metodoPagamento"
-                            value={formData.metodoPagamento}
-                            onChange={(e) => handleMetodoPagamentoChange(e.target.value as MetodoPagamento)}
-                            required
-                          >
-                            <option value="pix">Pix</option>
-                            <option value="boleto">Boleto</option>
-                            <option value="cartao">Cartão</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-group">
-                          <label htmlFor="formaPagamento">Forma de Pagamento *</label>
-                          {formData.metodoPagamento === 'cartao' ? (
-                            <select
-                              className="form-control"
-                              id="formaPagamento"
-                              name="formaPagamento"
-                              value={formData.formaPagamento}
-                              onChange={handleInputChange}
-                              required
-                            >
-                              <option value="total">Pagamento Total</option>
-                              <option value="parcelado">Pagamento Parcelado</option>
-                            </select>
-                          ) : (
-                            <input
-                              type="text"
-                              className="form-control"
-                              value="Pagamento Total"
-                              readOnly
-                            />
-                          )}
-                        </div>
-                      </div>
-                      {formData.metodoPagamento === 'cartao' && (
-                        <div className="col-md-4">
-                          <div className="form-group">
-                            <label htmlFor="numeroParcelas">Número de Parcelas *</label>
-                            <select
-                              className="form-control"
-                              id="numeroParcelas"
-                              name="numeroParcelas"
-                              value={formData.numeroParcelas}
-                              onChange={(e) => setFormData(prev => ({ ...prev, numeroParcelas: parseInt(e.target.value) }))}
-                              required
-                              disabled={formData.formaPagamento === 'total'}
-                            >
-                              <option value={1}>1 parcela</option>
-                              <option value={2}>2 parcelas</option>
-                              <option value={3}>3 parcelas</option>
-                              <option value={6}>6 parcelas</option>
-                              <option value={12}>12 parcelas</option>
-                              <option value={24}>24 parcelas</option>
-                            </select>
+                    {/* Dados de Pagamento - apenas para vendedores fixos */}
+                    {vendedorInfo?.tipoVendedor !== 'avulso' && (
+                      <>
+                        <div className="row mb-4 mt-4">
+                          <div className="col-12">
+                            <h5 className="text-primary">Dados de Pagamento</h5>
+                            <hr />
                           </div>
                         </div>
-                      )}
-                    </div>
+
+                        <div className="row">
+                          <div className="col-md-4">
+                            <div className="form-group">
+                              <label htmlFor="metodoPagamento">Método de Pagamento *</label>
+                              <select
+                                className="form-control"
+                                id="metodoPagamento"
+                                name="metodoPagamento"
+                                value={formData.metodoPagamento}
+                                onChange={(e) => handleMetodoPagamentoChange(e.target.value as MetodoPagamento)}
+                                required
+                              >
+                                <option value="pix">Pix</option>
+                                <option value="boleto">Boleto</option>
+                                <option value="cartao">Cartão</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="col-md-4">
+                            <div className="form-group">
+                              <label htmlFor="formaPagamento">Forma de Pagamento *</label>
+                              {formData.metodoPagamento === 'cartao' ? (
+                                <select
+                                  className="form-control"
+                                  id="formaPagamento"
+                                  name="formaPagamento"
+                                  value={formData.formaPagamento}
+                                  onChange={handleInputChange}
+                                  required
+                                >
+                                  <option value="total">Pagamento Total</option>
+                                  <option value="parcelado">Pagamento Parcelado</option>
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  value="Pagamento Total"
+                                  readOnly
+                                />
+                              )}
+                            </div>
+                          </div>
+                          {formData.metodoPagamento === 'cartao' && (
+                            <div className="col-md-4">
+                              <div className="form-group">
+                                <label htmlFor="numeroParcelas">Número de Parcelas *</label>
+                                <select
+                                  className="form-control"
+                                  id="numeroParcelas"
+                                  name="numeroParcelas"
+                                  value={formData.numeroParcelas}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, numeroParcelas: parseInt(e.target.value) }))}
+                                  required
+                                  disabled={formData.formaPagamento === 'total'}
+                                >
+                                  <option value={1}>1 parcela</option>
+                                  <option value={2}>2 parcelas</option>
+                                  <option value={3}>3 parcelas</option>
+                                  <option value={6}>6 parcelas</option>
+                                  <option value={12}>12 parcelas</option>
+                                  <option value={24}>24 parcelas</option>
+                                </select>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
 
                     {resumoCalculo && (
                       <div className="row">
