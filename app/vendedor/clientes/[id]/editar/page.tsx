@@ -15,7 +15,8 @@ export default function EditarClientePage() {
   const { showToast } = useToast()
   const router = useRouter()
   const params = useParams()
-  const clienteId = params.id as string
+  const clienteId = params && (typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '');
+  if (!clienteId) throw new Error('ID do cliente não encontrado');
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
