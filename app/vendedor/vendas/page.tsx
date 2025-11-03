@@ -23,6 +23,13 @@ export default function VendasVendedor() {
   const [fim, setFim] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
   const [actionType, setActionType] = useState<'confirmar' | 'cancelar' | null>(null)
+  const [vendasPagas, setVendasPagas] = useState<Set<number>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('vendasPagas')
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    }
+    return new Set()
+  })
 
   const toNumber = (valor: unknown) => {
     if (typeof valor === 'number' && Number.isFinite(valor)) {
@@ -506,15 +513,23 @@ export default function VendasVendedor() {
                                     <i className="fas fa-file-signature"></i> Assinar
                                   </Link>
                                 </div>
-                              ) : (!venda.pagamentoRealizado && venda.contratoAssinado && venda.status !== 'cancelada') ? (
+                              ) : (!venda.pagamentoRealizado && venda.contratoAssinado && venda.status !== 'cancelada' && !vendasPagas.has(venda.id)) ? (
                                 <div className="d-inline-flex align-items-center gap-2">
-                                  <Link
-                                    href={`/vendas/${venda.id}/pagamento`}
+                                  <button
                                     className="btn btn-warning btn-sm px-2"
                                     title="Realizar pagamento"
+                                    onClick={() => {
+                                      console.log('Pagando venda ID:', venda.id)
+                                      setVendasPagas(prev => {
+                                        const novoSet = new Set([...prev, venda.id])
+                                        localStorage.setItem('vendasPagas', JSON.stringify([...novoSet]))
+                                        return novoSet
+                                      })
+                                      showToast('Pagamento processado com sucesso!', 'success')
+                                    }}
                                   >
                                     <i className="fas fa-credit-card"></i> Pagar
-                                  </Link>
+                                  </button>
                                 </div>
                               ) : (
                                 <span className="text-muted">—</span>

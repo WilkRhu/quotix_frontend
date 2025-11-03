@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import axios from 'axios'
 import DashboardLayout from '../../components/DashboardLayout'
 import ProtectedRoute from '../../components/ProtectedRoute'
+import PagamentoModal from '../../components/PagamentoModal'
 import { Role } from '../../types/auth'
 import { useAuth } from '../../stories/authStore'
 import { API_BASE_URL, UPLOAD_URL } from '../../lib/api'
@@ -21,6 +22,20 @@ export default function PerfilVendedor() {
   const [lojasAutorizadas, setLojasAutorizadas] = useState<any[]>([])
   const [vendasRejeitadas, setVendasRejeitadas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [vendaSelecionada, setVendaSelecionada] = useState<any>(null)
+  const [vendasPagas, setVendasPagas] = useState<Set<number>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('vendasPagas')
+      if (saved) {
+        try {
+          return new Set(JSON.parse(saved))
+        } catch {
+          return new Set()
+        }
+      }
+    }
+    return new Set()
+  })
   const [estatisticas, setEstatisticas] = useState({
     totalVendas: 0,
     vendasConfirmadas: 0,
@@ -205,30 +220,34 @@ export default function PerfilVendedor() {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      let todasVendas = Array.isArray(responseRegular.data) ? [...responseRegular.data] : []
+      let todasVendas = []
       
-      // Se for vendedor avulso, carregar também vendas avulsas
+      // Se for vendedor avulso, carregar vendas avulsas
       if (vendedor?.tipoVendedor === 'avulso') {
         try {
           const responseAvulso = await axios.get(`${API_BASE_URL}/api/vendas-avulso/minhas-vendas`, {
             headers: { Authorization: `Bearer ${token}` }
           })
-          const vendasAvulsas = Array.isArray(responseAvulso.data) ? responseAvulso.data.map(v => ({...v, isAvulso: true})) : []
-          todasVendas = [...todasVendas, ...vendasAvulsas]
 
-          // Filtrar vendas rejeitadas/canceladas
-          const rejeitadas = vendasAvulsas.filter(v => v.status && v.status.toLowerCase().includes('cancel'))
-          setVendasRejeitadas(rejeitadas)
+          const vendasAvulsas = Array.isArray(responseAvulso.data) ? responseAvulso.data : []
+          todasVendas = [...vendasAvulsas]
         } catch (error) {
           console.error('Erro ao carregar vendas avulsas:', error)
         }
+      } else {
+        // Para vendedores fixos, usar vendas regulares
+        todasVendas = Array.isArray(responseRegular.data) ? [...responseRegular.data] : []
       }
+      
+
+
       
       const ordenadas = todasVendas.sort((a, b) => {
         const dataA = new Date(a?.createdAt ?? 0).getTime()
         const dataB = new Date(b?.createdAt ?? 0).getTime()
         return dataB - dataA
       })
+      
       setVendas(ordenadas)
     } catch (error) {
       console.error('Erro ao carregar vendas:', error)
@@ -295,7 +314,7 @@ export default function PerfilVendedor() {
   }
 
   const totaisVendas = useMemo(() => {
-    const vendasConfirmadas = vendas.filter(venda => venda.status === 'confirmada')
+    const vendasConfirmadas = vendas.filter(venda => venda.status === 'confirmada' || venda.status === 'paga')
     return vendasConfirmadas.reduce(
       (acc, venda) => {
         const valorVenda = obterValorVenda(venda)
@@ -426,18 +445,26 @@ export default function PerfilVendedor() {
         setLoading(true)
         try {
           await carregarPerfil()
-          await Promise.all([
-            carregarVendas(),
-            carregarEstatisticas(),
-            carregarLojasAutorizadas()
-          ])
         } finally {
           setLoading(false)
         }
       }
       carregarDados()
     }
-  }, [token, vendedor?.tipoVendedor])
+  }, [token])
+
+  useEffect(() => {
+    if (token && vendedor) {
+      const carregarDadosVendas = async () => {
+        await Promise.all([
+          carregarVendas(),
+          carregarEstatisticas(),
+          carregarLojasAutorizadas()
+        ])
+      }
+      carregarDadosVendas()
+    }
+  }, [token, vendedor])
 
   const saudacao = vendedor?.loja?.nome ? `Dashboard / ${vendedor.loja.nome}` : 'Dashboard / Vendas';
 
@@ -586,9 +613,118 @@ export default function PerfilVendedor() {
           </div>
         </div>
 
+        {/* Vendas Aguardando Assinatura de Contrato */}
+        {(() => {
+          const aguardandoAssinatura = vendas.filter(v => 
+            v.status === 'aprovada_loja' && !v.contratoAssinado
+          )
+          if (aguardandoAssinatura.length === 0) return null
+          return (
+            <div className="row mt-4">
+              <div className="col-12">
+                <div className="card border-info">
+                  <div className="card-header pb-0 bg-info text-white">
+                    <h6><i className="fas fa-file-signature me-2"></i>Vendas Aguardando Assinatura de Contrato</h6>
+                    <p className="text-sm mb-0">Vendas aprovadas pela loja que precisam da assinatura do cliente</p>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      {aguardandoAssinatura.slice(0, 3).map((venda: any) => (
+                        <div key={venda.id} className="col-md-6 col-lg-4 mb-3">
+                          <div className="card h-100 border-info">
+                            <div className="card-body">
+                              <div className="mb-2">
+                                <span className="badge bg-info">Aguardando Assinatura</span>
+                              </div>
+                              <h6 className="mb-1">{venda.marca} {venda.modelo} {venda.ano}</h6>
+                              <small className="text-muted">Cliente: {venda.cliente?.name || venda.clienteId}</small><br/>
+                              <small className="text-muted">Valor: {formatMoney(venda.valorSeguro)}</small><br/>
+                              <small className="text-muted">Aprovada em: {new Date(venda.updatedAt).toLocaleDateString('pt-BR')}</small>
+                              <div className="mt-2">
+                                <small className="text-info">
+                                  <i className="fas fa-clock me-1"></i>
+                                  Aguardando cliente assinar contrato
+                                </small>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {aguardandoAssinatura.length > 3 && (
+                      <div className="text-center mt-3">
+                        <a href="/vendedor/vendas" className="btn btn-outline-info">Ver todas ({aguardandoAssinatura.length})</a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Vendas Confirmadas e Prontas para Pagamento */}
+        {(() => {
+          const prontasPagamento = vendas.filter(v => 
+            v.status === 'confirmada' && v.contratoAssinado && !v.pagamentoRealizado && !vendasPagas.has(v.id)
+          )
+          
+          const vendasParaMostrar = prontasPagamento
+          if (vendasParaMostrar.length === 0) return null
+          return (
+            <div className="row mt-4">
+              <div className="col-12">
+                <div className="card border-warning">
+                  <div className="card-header pb-0 bg-warning text-dark">
+                    <h6><i className="fas fa-credit-card me-2"></i>Vendas Prontas para Pagamento</h6>
+                    <p className="text-sm mb-0">Vendas aprovadas com contrato assinado aguardando pagamento</p>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      {vendasParaMostrar.slice(0, 3).map((venda: any) => (
+                        <div key={venda.id} className="col-md-6 col-lg-4 mb-3">
+                          <div className="card h-100 border-warning">
+                            <div className="card-body">
+                              <div className="mb-2 d-flex justify-content-between">
+                                <span className="badge bg-warning text-dark">Pronta para Pagamento</span>
+                                <span className="badge bg-success">
+                                  <i className="fas fa-file-signature me-1"></i>Contrato OK
+                                </span>
+                              </div>
+                              <h6 className="mb-1">{venda.marca} {venda.modelo} {venda.ano}</h6>
+                              <small className="text-muted">Cliente: {venda.cliente?.name || venda.clienteId}</small><br/>
+                              <small className="text-muted">Valor: {formatMoney(venda.valorSeguro)}</small><br/>
+                              <small className="text-muted">Método: {venda.metodoPagamento}</small><br/>
+                              <small className="text-muted">Assinado em: {new Date(venda.dataAssinaturaContrato).toLocaleDateString('pt-BR')}</small>
+                              <div className="mt-2">
+                                <button 
+                                  className="btn btn-sm btn-warning w-100"
+                                  onClick={() => setVendaSelecionada(venda)}
+                                >
+                                  <i className="fas fa-credit-card me-1"></i>
+                                  Processar Pagamento
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {vendasParaMostrar.length > 3 && (
+                      <div className="text-center mt-3">
+                        <a href="/vendedor/vendas" className="btn btn-outline-warning">Ver todas ({vendasParaMostrar.length})</a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Vendas aprovadas */}
         {(() => {
-          const aprovadas = vendas.filter(v => v.status === 'confirmada')
+          const aprovadas = vendas.filter(v => v.status === 'confirmada' || v.status === 'paga')
           if (aprovadas.length === 0) return null
           return (
             <div className="row mt-4">
@@ -596,7 +732,7 @@ export default function PerfilVendedor() {
                 <div className="card border-success">
                   <div className="card-header pb-0 bg-success text-white">
                     <h6>Vendas Aprovadas</h6>
-                    <p className="text-sm mb-0">Últimas vendas aprovadas</p>
+                    <p className="text-sm mb-0">Vendas aprovadas - pagas ou não pagas</p>
                   </div>
                   <div className="card-body">
                     <div className="row">
@@ -605,7 +741,9 @@ export default function PerfilVendedor() {
                           <div className="card h-100 border-success">
                             <div className="card-body">
                               <div className="mb-2">
-                                <span className="badge bg-success">Aprovada</span>
+                                <span className={`badge ${venda.status === 'paga' ? 'bg-success' : 'bg-warning text-dark'}`}>
+                                  {venda.status === 'paga' ? 'Aprovada - Paga' : 'Aprovada - Não Paga'}
+                                </span>
                               </div>
                               <h6 className="mb-1">{venda.marca} {venda.modelo} {venda.ano}</h6>
                               <small className="text-muted">Cliente: {venda.cliente?.name || venda.clienteId}</small><br/>
@@ -743,6 +881,24 @@ export default function PerfilVendedor() {
 
 
       </DashboardLayout>
+      
+      <PagamentoModal
+        venda={vendaSelecionada}
+        isOpen={!!vendaSelecionada}
+        onClose={() => setVendaSelecionada(null)}
+        onSuccess={() => {
+          if (vendaSelecionada?.id) {
+            setVendasPagas(prev => {
+              const novoSet = new Set([...prev, vendaSelecionada.id])
+              localStorage.setItem('vendasPagas', JSON.stringify([...novoSet]))
+              return novoSet
+            })
+            // Recarregar vendas para atualizar o status
+            carregarVendas()
+          }
+          setVendaSelecionada(null)
+        }}
+      />
     </ProtectedRoute>
   )
 }

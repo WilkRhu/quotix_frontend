@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import DashboardLayout from '../../../../../components/DashboardLayout'
 import ProtectedRoute from '../../../../../components/ProtectedRoute'
-import ClienteDocumentUpload from '../../../../../components/ClienteDocumentUpload'
+import DocumentUploadCards from '../../../../../components/DocumentUploadCards'
 import { Role } from '../../../../../types/auth'
 import { useAuth } from '../../../../../stories/authStore'
 import { API_BASE_URL } from '../../../../../lib/api'
@@ -243,7 +243,7 @@ export default function EditarClientePage() {
                 </div>
               </div>
 
-              <ClienteDocumentUpload 
+              <DocumentUploadCards 
                 clienteId={clienteId}
                 onUploadComplete={() => {}}
               />
