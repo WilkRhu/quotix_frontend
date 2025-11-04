@@ -143,7 +143,7 @@ export default function NovaVenda() {
 
   useEffect(() => {
     // Verificar se há parâmetros da busca FIPE na URL
-    if (searchParams && !fipeToastShown && tiposCotacao.length > 0) {
+    if (searchParams && !fipeToastShown) {
       const tipoVeiculoParam = searchParams.get('tipoVeiculo')
       const marca = searchParams.get('marca')
       const modelo = searchParams.get('modelo')
@@ -176,35 +176,29 @@ export default function NovaVenda() {
 
         const tipoVeiculoMapeado = mapTipoVeiculo(tipoVeiculoParam)
 
-        // Selecionar automaticamente um tipo de cotação baseado no tipo de veículo
-        const selecionarTipoCotacaoAutomatico = (tipoVeiculo: string) => {
-          // Procurar por tipos de cotação que correspondam ao tipo de veículo
-          const tiposCompativeis = tiposCotacao.filter(tipo =>
-            tipo.nome.toLowerCase().includes(tipoVeiculo.toLowerCase()) ||
-            tipo.descricao?.toLowerCase().includes(tipoVeiculo.toLowerCase())
-          )
+        // A seleção do tipo de cotação será feita em outro useEffect quando os tipos forem carregados
 
-          // Retornar o primeiro tipo compatível encontrado, ou o primeiro tipo disponível
-          return tiposCompativeis.length > 0 ? tiposCompativeis[0].id : (tiposCotacao.length > 0 ? tiposCotacao[0].id : '')
-        }
-
-        const tipoCotacaoId = tipoVeiculoMapeado ? selecionarTipoCotacaoAutomatico(tipoVeiculoMapeado) : ''
-
+        const valorFipeNumerico = valorFipe ? parseFloat(valorFipe) || 0 : 0
+        
         setFormData(prev => ({
           ...prev,
           tipoVeiculo: normalizarTipoVeiculo(tipoVeiculoMapeado) || prev.tipoVeiculo,
           marca: marca || prev.marca,
           modelo: modelo || prev.modelo,
           ano: ano || prev.ano,
-          valorVeiculo: valorFipe ? parseFloat(valorFipe) || 0 : prev.valorVeiculo,
-          tipoCotacaoLojaId: tipoCotacaoId || prev.tipoCotacaoLojaId
+          valorVeiculo: valorFipeNumerico || prev.valorVeiculo
         }))
+        
+        // Atualizar também o display do valor
+        if (valorFipeNumerico > 0) {
+          setValorVeiculoDisplay(formatCurrency(valorFipeNumerico))
+        }
 
         showToast('Dados do veículo preenchidos automaticamente da busca FIPE!', 'success')
         setFipeToastShown(true)
       }
     }
-  }, [searchParams, fipeToastShown, showToast, tiposCotacao])
+  }, [searchParams, fipeToastShown, showToast])
 
   useEffect(() => {
     // Verificar se há parâmetros de venda incompleta na URL
@@ -308,24 +302,17 @@ export default function NovaVenda() {
     }
 
     try {
-      let endpoint = `${API_BASE_URL}/api/vendas/vendedor/tipos-cotacao`
-      
-      // Se veio lojaId da busca FIPE, buscar tipos específicos da loja
-      if (lojaId) {
-        endpoint = `${API_BASE_URL}/api/lojas/${lojaId}/tipos-cotacao`
-        console.log('Buscando tipos de cotação da loja:', lojaId)
-        console.log('Endpoint:', endpoint)
-      }
+      const endpoint = `${API_BASE_URL}/api/vendas/vendedor/tipos-cotacao`
       
       const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      console.log('Resposta tipos de cotação:', response.data)
       setTiposCotacao(Array.isArray(response.data) ? response.data : [])
       
       if (lojaId && response.data.length > 0) {
-        showToast(`${response.data.length} tipos de cotação carregados da loja selecionada`, 'success')
+        const tiposLoja = response.data.filter((tipo: any) => tipo.loja?.id === lojaId)
+        showToast(`${response.data.length} tipos de cotação carregados`, 'success')
       }
     } catch (error) {
       console.error('Erro ao buscar tipos de cotação:', error)
@@ -376,6 +363,25 @@ export default function NovaVenda() {
       buscarVendedorInfo()
     }
   }, [token, searchParams])
+
+  // Selecionar automaticamente cotação da loja quando tipos são carregados
+  useEffect(() => {
+    const lojaId = searchParams?.get('lojaId')
+    
+    if (lojaId && tiposCotacao.length > 0 && !formData.tipoCotacaoLojaId) {
+      // Primeiro, tentar encontrar tipo específico da loja
+      let tipoCotacaoLoja = tiposCotacao.find(tipo => tipo.loja?.id === lojaId)
+      
+      // Se não encontrar, pegar o primeiro tipo disponível
+      if (!tipoCotacaoLoja && tiposCotacao.length > 0) {
+        tipoCotacaoLoja = tiposCotacao[0]
+      }
+      
+      if (tipoCotacaoLoja) {
+        setFormData(prev => ({ ...prev, tipoCotacaoLojaId: tipoCotacaoLoja.id }))
+      }
+    }
+  }, [tiposCotacao, searchParams, formData.tipoCotacaoLojaId])
 
   // Criar cards pré-definidos apenas para carros
   useEffect(() => {

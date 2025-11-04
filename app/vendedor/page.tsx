@@ -898,6 +898,11 @@ export default function PerfilVendedor() {
                                 </span>
                               </div>
                             )}
+                            <div className="mb-2">
+                              <span className="badge bg-gradient-primary">
+                                Vendas realizadas: {loja.totalVendas ?? 0}
+                              </span>
+                            </div>
                             <div className="d-flex justify-content-between align-items-center">
                               <small className="text-muted">
                                 <i className="fas fa-envelope me-1"></i>

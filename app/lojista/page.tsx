@@ -95,7 +95,10 @@ export default function DashboardLojista() {
       const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1)
       const vendasDoMes = todasVendas.filter(venda => {
         const dataVenda = new Date(venda.createdAt)
-        return dataVenda >= inicioMes && venda.status === 'confirmada'
+        return (
+          dataVenda >= inicioMes &&
+          (venda.status === 'confirmada' || venda.status === 'paga')
+        )
       })
       const valorVendasMes = vendasDoMes.reduce((total, venda) => total + toNumber(venda.valorSeguro), 0)
 
@@ -357,7 +360,7 @@ export default function DashboardLojista() {
 
     const formatter = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' })
     const recentes = [...vendas]
-      .filter(venda => venda?.createdAt)
+      .filter(venda => venda?.createdAt && (venda.status === 'confirmada' || venda.status === 'paga'))
       .slice(0, 8)
       .reverse()
 
