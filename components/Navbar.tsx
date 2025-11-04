@@ -20,6 +20,8 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [vendasEmAndamento, setVendasEmAndamento] = useState(0)
   const [vendas, setVendas] = useState<any[]>([])
+  const [solicitacoesPendentes, setSolicitacoesPendentes] = useState(0)
+  const [solicitacoes, setSolicitacoes] = useState<any[]>([])
 
   const handleLogout = () => {
     logout()
@@ -133,6 +135,29 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
     }
   }, [user?.role, token])
 
+  useEffect(() => {
+    if ((user?.role === Role.LOJISTA || user?.role === Role.LOGIST) && token) {
+      const fetchSolicitacoes = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/api/vendedores-avulsos/solicitacoes`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (response.ok) {
+            const data = await response.json()
+            const pendentes = data.filter((s: any) => s.status === 'pendente')
+            setSolicitacoes(pendentes)
+            setSolicitacoesPendentes(pendentes.length)
+          }
+        } catch (error) {
+          console.error('Erro ao buscar solicitações:', error)
+        }
+      }
+      fetchSolicitacoes()
+      const interval = setInterval(fetchSolicitacoes, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [user?.role, token])
+
   const avatarSrc = useMemo(() => {
     if (avatarUrl) {
       return avatarUrl
@@ -172,6 +197,12 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
                       <span className="visually-hidden">vendas em andamento</span>
                     </span>
                   )}
+                  {(user?.role === Role.LOJISTA || user?.role === Role.LOGIST) && solicitacoesPendentes > 0 && (
+                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem' }}>
+                      {solicitacoesPendentes}
+                      <span className="visually-hidden">solicitações pendentes</span>
+                    </span>
+                  )}
                 </button>
                 {showNotifications && (
                   <div className="dropdown-menu dropdown-menu-end show" style={{ position: 'absolute', right: 0, top: '100%', minWidth: '320px', maxHeight: '400px', overflowY: 'auto' }}>
@@ -203,6 +234,31 @@ export default function Navbar({ title = 'Dashboard', onToggleSidebar, isSidebar
                         <div className="dropdown-divider"></div>
                         <a href="/vendedor/vendas/andamento" className="dropdown-item text-center text-primary">
                           Ver todas ({vendasEmAndamento})
+                        </a>
+                      </>
+                    ) : (user?.role === Role.LOJISTA || user?.role === Role.LOGIST) && solicitacoes.length > 0 ? (
+                      <>
+                        {solicitacoes.slice(0, 5).map((solicitacao: any) => (
+                          <a key={solicitacao.id} href="/lojista/vendedores-avulsos" className="dropdown-item py-2">
+                            <div className="d-flex align-items-start">
+                              <i className="fas fa-user-plus text-warning me-2 mt-1"></i>
+                              <div className="flex-grow-1">
+                                <p className="mb-0 text-sm font-weight-bold">
+                                  {solicitacao.vendedor?.nome}
+                                </p>
+                                <p className="mb-0 text-xs text-muted">
+                                  Solicitação de vendedor avulso
+                                </p>
+                                <span className="badge badge-sm bg-warning mt-1">
+                                  Pendente
+                                </span>
+                              </div>
+                            </div>
+                          </a>
+                        ))}
+                        <div className="dropdown-divider"></div>
+                        <a href="/lojista/vendedores-avulsos" className="dropdown-item text-center text-primary">
+                          Ver todas ({solicitacoesPendentes})
                         </a>
                       </>
                     ) : (

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../lib/api';
+import { useToast } from '../../../stories/toastStore';
 import { useAuth } from '../../../stories/authStore';
 import DashboardLayout from '../../../components/DashboardLayout';
 import ProtectedRoute from '../../../components/ProtectedRoute';
@@ -14,19 +15,16 @@ interface Loja {
   cidade: string;
   estado: string;
   email: string;
+  comissao: number;
   status: 'autorizada' | 'pendente' | 'disponivel';
 }
 
 export default function SolicitarLojas() {
+  const { showToast } = useToast();
   const { token } = useAuth();
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modalAberto, setModalAberto] = useState(false);
-  const [lojaSelecionada, setLojaSelecionada] = useState<Loja | null>(null);
-  const [formData, setFormData] = useState({
-    mensagem: '',
-    comissaoSolicitada: 5
-  });
+  // Modal e estados removidos
 
   useEffect(() => {
     carregarLojas();
@@ -45,30 +43,43 @@ export default function SolicitarLojas() {
     }
   };
 
-  const abrirModal = (loja: Loja) => {
-    setLojaSelecionada(loja);
-    setModalAberto(true);
-    setFormData({ mensagem: '', comissaoSolicitada: 5 });
-  };
-
-  const enviarSolicitacao = async () => {
-    if (!lojaSelecionada) return;
-
+  const solicitarAutorizacao = async (loja: Loja) => {
     try {
       await axios.post(`${API_BASE_URL}/api/vendas-avulso/solicitar-loja`, {
-        lojaId: lojaSelecionada.id,
-        ...formData
+        lojaId: loja.id
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
-      alert('Solicitação enviada com sucesso!');
-      setModalAberto(false);
+      showToast('Solicitação enviada com sucesso!', 'success');
+      // Atualiza status da loja para pendente imediatamente
+      setLojas((prevLojas) => prevLojas.map((l) =>
+        l.id === loja.id ? { ...l, status: 'pendente' } : l
+      ));
       carregarLojas();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Erro ao enviar solicitação');
+      showToast(error.response?.data?.message || 'Erro ao enviar solicitação', 'error');
     }
-  };
+  }
+
+  const cancelarSolicitacao = async (loja: Loja) => {
+    try {
+      await axios.post(`${API_BASE_URL}/api/vendas-avulso/cancelar-solicitacao`, {
+        lojaId: loja.id
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      showToast('Solicitação cancelada com sucesso!', 'success');
+      // Atualiza status da loja para disponível imediatamente
+      setLojas((prevLojas) => prevLojas.map((l) =>
+        l.id === loja.id ? { ...l, status: 'disponivel' } : l
+      ));
+      carregarLojas();
+    } catch (error: any) {
+      showToast(error.response?.data?.message || 'Erro ao cancelar solicitação', 'error');
+    }
+  }
+
+  // Função antiga de envio removida
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -114,28 +125,38 @@ export default function SolicitarLojas() {
                               <i className="fas fa-map-marker-alt me-1"></i>
                               {loja.cidade}/{loja.estado}
                             </p>
-                            <p className="text-sm text-muted mb-3">
+                            <p className="text-sm text-muted mb-2">
                               <i className="fas fa-envelope me-1"></i>
                               {loja.email}
                             </p>
-                            
+                            <p className="text-sm text-success mb-3">
+                              <i className="fas fa-percentage me-1"></i>
+                              Comissão: {loja.comissao}%
+                            </p>
                             {loja.status === 'disponivel' && (
                               <button 
                                 className="btn btn-primary btn-sm w-100"
-                                onClick={() => abrirModal(loja)}
+                                onClick={() => solicitarAutorizacao(loja)}
                               >
                                 <i className="fas fa-paper-plane me-1"></i>
                                 Solicitar Autorização
                               </button>
                             )}
-                            
                             {loja.status === 'pendente' && (
-                              <button className="btn btn-warning btn-sm w-100" disabled>
-                                <i className="fas fa-clock me-1"></i>
-                                Aguardando Resposta
-                              </button>
+                              <div>
+                                <div className="alert alert-warning mt-2 mb-2 p-2 text-center">
+                                  <i className="fas fa-clock me-1"></i>
+                                  Solicitação enviada, aguardando resposta
+                                </div>
+                                <button 
+                                  className="btn btn-outline-danger btn-sm w-100"
+                                  onClick={() => cancelarSolicitacao(loja)}
+                                >
+                                  <i className="fas fa-times me-1"></i>
+                                  Cancelar Solicitação
+                                </button>
+                              </div>
                             )}
-                            
                             {loja.status === 'autorizada' && (
                               <button className="btn btn-success btn-sm w-100" disabled>
                                 <i className="fas fa-check me-1"></i>
@@ -152,76 +173,6 @@ export default function SolicitarLojas() {
             </div>
           </div>
         </div>
-
-        {/* Modal de Solicitação */}
-        {modalAberto && lojaSelecionada && (
-          <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Solicitar Autorização</h5>
-                  <button 
-                    type="button" 
-                    className="btn-close"
-                    onClick={() => setModalAberto(false)}
-                  ></button>
-                </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <strong>Loja:</strong> {lojaSelecionada.nome}<br/>
-                    <strong>Localização:</strong> {lojaSelecionada.cidade}/{lojaSelecionada.estado}
-                  </div>
-                  
-                  <div className="mb-3">
-                    <label className="form-label">Comissão Desejada (%)</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={formData.comissaoSolicitada}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        comissaoSolicitada: Number(e.target.value)
-                      }))}
-                      min="0"
-                      max="100"
-                      step="0.1"
-                    />
-                  </div>
-                  
-                  <div className="mb-3">
-                    <label className="form-label">Mensagem (opcional)</label>
-                    <textarea
-                      className="form-control"
-                      rows={3}
-                      value={formData.mensagem}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        mensagem: e.target.value
-                      }))}
-                      placeholder="Apresente-se e explique por que deseja trabalhar com esta loja..."
-                    />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary"
-                    onClick={() => setModalAberto(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="button" 
-                    className="btn btn-primary"
-                    onClick={enviarSolicitacao}
-                  >
-                    Enviar Solicitação
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </DashboardLayout>
     </ProtectedRoute>
   );
