@@ -47,12 +47,12 @@ export default function NovaVendaAvulsa() {
 
   useEffect(() => {
     // Pré-preencher com dados da busca FIPE
-    const tipoVeiculo = searchParams.get('tipoVeiculo');
-    const marca = searchParams.get('marca');
-    const modelo = searchParams.get('modelo');
-    const ano = searchParams.get('ano');
-    const valorSeguro = searchParams.get('valorSeguro');
-    const lojaId = searchParams.get('lojaId');
+  const tipoVeiculo = searchParams?.get('tipoVeiculo');
+  const marca = searchParams?.get('marca');
+  const modelo = searchParams?.get('modelo');
+  const ano = searchParams?.get('ano');
+  const valorSeguro = searchParams?.get('valorSeguro');
+  const lojaId = searchParams?.get('lojaId');
 
     if (tipoVeiculo || marca || modelo || ano || valorSeguro || lojaId) {
       setFormData(prev => ({
@@ -120,7 +120,7 @@ export default function NovaVendaAvulsa() {
               <div className="card-header pb-0">
                 <h6>Cadastrar Nova Venda Avulsa</h6>
                 <p className="text-sm mb-0">Preencha os dados da venda e inclua imagens do veículo</p>
-                {(searchParams.get('tipoVeiculo') || searchParams.get('valorSeguro')) && (
+                {(searchParams?.get('tipoVeiculo') || searchParams?.get('valorSeguro')) && (
                   <div className="alert alert-info mt-2 mb-0">
                     <i className="fas fa-search me-2"></i>
                     <strong>Dados pré-preenchidos:</strong> Informações vindas da Busca FIPE
