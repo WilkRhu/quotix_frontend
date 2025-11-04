@@ -45,7 +45,7 @@ export default function SolicitarLojas() {
 
   const solicitarAutorizacao = async (loja: Loja) => {
     try {
-      await axios.post(`${API_BASE_URL}/api/vendas-avulso/solicitar-loja`, {
+      await axios.post(`${API_BASE_URL}/api/api/vendedores-avulsos/solicitar-loja-avulso`, {
         lojaId: loja.id
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -63,7 +63,7 @@ export default function SolicitarLojas() {
 
   const cancelarSolicitacao = async (loja: Loja) => {
     try {
-      await axios.post(`${API_BASE_URL}/api/vendas-avulso/cancelar-solicitacao`, {
+      await axios.post(`${API_BASE_URL}/api/api/vendedores-avulsos/cancelar-solicitacao`, {
         lojaId: loja.id
       }, {
         headers: { Authorization: `Bearer ${token}` }
