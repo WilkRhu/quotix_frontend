@@ -116,6 +116,7 @@ export default function VendasAvulsasPage() {
                       <th>Valor</th>
                       <th>Comissão</th>
                       <th>Status</th>
+                      <th>Contrato</th>
                       <th>Data</th>
                       <th>Ações</th>
                     </tr>
@@ -154,6 +155,19 @@ export default function VendasAvulsasPage() {
                           <span className={`badge ${getStatusBadge(venda.status)}`}>
                             {venda.status}
                           </span>
+                        </td>
+                        <td>
+                          {venda.contratoAssinado ? (
+                            <span className="badge bg-success">
+                              <i className="fas fa-check me-1"></i>
+                              Assinado
+                            </span>
+                          ) : (
+                            <span className="badge bg-warning">
+                              <i className="fas fa-clock me-1"></i>
+                              Pendente
+                            </span>
+                          )}
                         </td>
                         <td>
                           {new Date(venda.createdAt).toLocaleDateString('pt-BR')}

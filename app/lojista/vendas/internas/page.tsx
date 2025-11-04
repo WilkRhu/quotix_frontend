@@ -86,6 +86,7 @@ export default function VendasInternasPage() {
                       <th>Veículo</th>
                       <th>Valor</th>
                       <th>Status</th>
+                      <th>Contrato</th>
                       <th>Data</th>
                     </tr>
                   </thead>
@@ -123,6 +124,19 @@ export default function VendasInternasPage() {
                           <span className={`badge ${getStatusBadge(venda.status)}`}>
                             {venda.status}
                           </span>
+                        </td>
+                        <td>
+                          {venda.contratoAssinado ? (
+                            <span className="badge bg-success">
+                              <i className="fas fa-check me-1"></i>
+                              Assinado
+                            </span>
+                          ) : (
+                            <span className="badge bg-warning">
+                              <i className="fas fa-clock me-1"></i>
+                              Pendente
+                            </span>
+                          )}
                         </td>
                         <td>
                           {new Date(venda.createdAt).toLocaleDateString('pt-BR')}

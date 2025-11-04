@@ -514,6 +514,7 @@ export default function DashboardLojista() {
                           <th>Veículo</th>
                           <th>Valor</th>
                           <th>Vendedor</th>
+                          <th>Contrato</th>
                           <th>Data</th>
                           <th>Ações</th>
                         </tr>
@@ -527,7 +528,15 @@ export default function DashboardLojista() {
                               <td>
                                 <div className="d-flex align-items-center">
                                   <div className="avatar avatar-sm bg-gradient-primary rounded-circle me-2">
-                                    <i className="fas fa-user text-white text-xs"></i>
+                                    {venda.cliente?.foto ? (
+                                      <img
+                                        src={venda.cliente.foto}
+                                        alt={venda.cliente.name}
+                                        className="avatar-img"
+                                      />
+                                    ) : (
+                                      <i className="fas fa-user text-white text-xs"></i>
+                                    )}
                                   </div>
                                   <div>
                                     <span className="text-sm font-weight-bold">
@@ -561,6 +570,19 @@ export default function DashboardLojista() {
                                     </>
                                   )}
                                 </div>
+                              </td>
+                              <td>
+                                {venda.contratoAssinado ? (
+                                  <span className="badge bg-success">
+                                    <i className="fas fa-check me-1"></i>
+                                    Assinado
+                                  </span>
+                                ) : (
+                                  <span className="badge bg-warning">
+                                    <i className="fas fa-clock me-1"></i>
+                                    Pendente
+                                  </span>
+                                )}
                               </td>
                               <td>
                                 <span className="text-sm">

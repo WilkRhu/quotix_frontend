@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../lib/api';
 import { useAuth } from '../../../stories/authStore';
@@ -19,6 +19,7 @@ interface Loja {
 
 export default function NovaVendaAvulsa() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, token } = useAuth();
   const [lojasAutorizadas, setLojasAutorizadas] = useState<Loja[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,9 +45,31 @@ export default function NovaVendaAvulsa() {
     carregarLojasAutorizadas();
   }, []);
 
+  useEffect(() => {
+    // Pré-preencher com dados da busca FIPE
+    const tipoVeiculo = searchParams.get('tipoVeiculo');
+    const marca = searchParams.get('marca');
+    const modelo = searchParams.get('modelo');
+    const ano = searchParams.get('ano');
+    const valorSeguro = searchParams.get('valorSeguro');
+    const lojaId = searchParams.get('lojaId');
+
+    if (tipoVeiculo || marca || modelo || ano || valorSeguro || lojaId) {
+      setFormData(prev => ({
+        ...prev,
+        ...(tipoVeiculo && { tipoVeiculo }),
+        ...(marca && { marca }),
+        ...(modelo && { modelo }),
+        ...(ano && { ano }),
+        ...(valorSeguro && { valorSeguro }),
+        ...(lojaId && { lojaId })
+      }));
+    }
+  }, [searchParams]);
+
   const carregarLojasAutorizadas = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/vendedor/lojas-autorizadas`, {
+      const response = await axios.get(`${API_BASE_URL}/api/vendas-avulso/minhas-lojas`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setLojasAutorizadas(response.data || []);
@@ -97,6 +120,12 @@ export default function NovaVendaAvulsa() {
               <div className="card-header pb-0">
                 <h6>Cadastrar Nova Venda Avulsa</h6>
                 <p className="text-sm mb-0">Preencha os dados da venda e inclua imagens do veículo</p>
+                {(searchParams.get('tipoVeiculo') || searchParams.get('valorSeguro')) && (
+                  <div className="alert alert-info mt-2 mb-0">
+                    <i className="fas fa-search me-2"></i>
+                    <strong>Dados pré-preenchidos:</strong> Informações vindas da Busca FIPE
+                  </div>
+                )}
               </div>
               <div className="card-body">
                 <form onSubmit={handleSubmit}>

@@ -29,6 +29,9 @@ export default function BuscaFipe() {
   const [anos, setAnos] = useState([])
   const [loading, setLoading] = useState(false)
   const [veiculoSelecionado, setVeiculoSelecionado] = useState<any>(null)
+  const [lojasDisponiveis, setLojasDisponiveis] = useState<any[]>([])
+  const [loadingLojas, setLoadingLojas] = useState(false)
+  const { token } = useAuth()
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     if (e.target.name === 'marcaFiltro') {
@@ -157,6 +160,22 @@ export default function BuscaFipe() {
     return fallbackPorTipo[tipo as keyof typeof fallbackPorTipo] || fallbackPorTipo.carros
   }
 
+  const buscarLojasDisponiveis = async () => {
+    setLoadingLojas(true)
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/vendas-avulso/minhas-lojas`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setLojasDisponiveis(response.data || [])
+      showToast('Lojas carregadas com sucesso!', 'success')
+    } catch (error) {
+      console.error('Erro ao buscar lojas:', error)
+      showToast('Erro ao carregar lojas', 'error')
+    } finally {
+      setLoadingLojas(false)
+    }
+  }
+
   const usarValorNaVenda = () => {
     if (!veiculoSelecionado) return
 
@@ -181,6 +200,39 @@ export default function BuscaFipe() {
     })
 
     router.push(`/vendedor/nova-venda?${params.toString()}`)
+  }
+
+  const criarVendaComLoja = (lojaId: string) => {
+    console.log('Criando venda com loja:', lojaId)
+    console.log('Veículo selecionado:', veiculoSelecionado)
+    
+    if (!veiculoSelecionado) {
+      console.log('Nenhum veículo selecionado')
+      return
+    }
+
+    const tipoParaVenda = veiculoSelecionado.tipoVeiculo === 'carros' ? 'Carro' :
+                         veiculoSelecionado.tipoVeiculo === 'motos' ? 'Moto' : 'Caminhão'
+
+    const valorFipeNumerico = veiculoSelecionado.Valor
+      .replace('R$', '')
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .trim()
+
+    const params = new URLSearchParams({
+      tipoVeiculo: tipoParaVenda,
+      marca: veiculoSelecionado.Marca,
+      modelo: veiculoSelecionado.Modelo,
+      ano: veiculoSelecionado.AnoModelo,
+      valorFipe: valorFipeNumerico,
+      lojaId
+    })
+
+    const url = `/vendedor/nova-venda?${params.toString()}`
+    console.log('Navegando para:', url)
+    
+    router.push(url)
   }
 
   return (
@@ -325,16 +377,105 @@ export default function BuscaFipe() {
                                     <strong>Dica:</strong> Use este valor como referência para precificar o seguro do veículo.
                                   </div>
                                   <div className="mt-3">
-                                    <button
-                                      type="button"
-                                      className="btn btn-primary btn-lg w-100"
-                                      onClick={usarValorNaVenda}
-                                    >
-                                      <i className="fas fa-shopping-cart me-2"></i>
-                                      Usar este valor na venda
-                                    </button>
+                                    <div className="row g-2">
+                                      <div className="col-md-6">
+                                        <button
+                                          type="button"
+                                          className="btn btn-primary w-100"
+                                          onClick={usarValorNaVenda}
+                                        >
+                                          <i className="fas fa-shopping-cart me-1"></i>
+                                          Venda Normal
+                                        </button>
+                                      </div>
+                                      <div className="col-md-6">
+                                        <button
+                                          type="button"
+                                          className="btn btn-success w-100"
+                                          onClick={buscarLojasDisponiveis}
+                                          disabled={loadingLojas}
+                                        >
+                                          {loadingLojas ? (
+                                            <>
+                                              <span className="spinner-border spinner-border-sm me-1"></span>
+                                              Carregando...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <i className="fas fa-store me-1"></i>
+                                              Ver Lojas
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Lojas Disponíveis */}
+                    {lojasDisponiveis.length > 0 && veiculoSelecionado && (
+                      <div className="row mt-4">
+                        <div className="col-12">
+                          <div className="card border-success">
+                            <div className="card-header bg-success text-white">
+                              <h6 className="mb-0">
+                                <i className="fas fa-store me-2"></i>
+                                Minhas Lojas Autorizadas
+                              </h6>
+                            </div>
+                            <div className="card-body">
+                              <div className="alert alert-info">
+                                <i className="fas fa-info-circle me-2"></i>
+                                Selecione uma das suas lojas autorizadas para criar uma venda com os dados do veículo consultado.
+                              </div>
+                              <div className="row">
+                                {lojasDisponiveis.map((loja: any) => (
+                                  <div key={loja.id} className="col-md-6 col-lg-4 mb-3">
+                                    <div className="card h-100">
+                                      <div className="card-body">
+                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                          <h6 className="mb-0">{loja.nome}</h6>
+                                          <span className="badge bg-success">
+                                            Autorizada
+                                          </span>
+                                        </div>
+                                        <p className="text-sm text-muted mb-2">
+                                          <i className="fas fa-map-marker-alt me-1"></i>
+                                          {loja.cidade}/{loja.estado}
+                                        </p>
+                                        {loja.comissaoNegociada && (
+                                          <p className="text-sm text-success mb-2">
+                                            <i className="fas fa-percentage me-1"></i>
+                                            Comissão: {loja.comissaoNegociada}%
+                                          </p>
+                                        )}
+                                        <p className="text-sm text-muted mb-3">
+                                          <i className="fas fa-envelope me-1"></i>
+                                          {loja.email}
+                                        </p>
+                                        
+                                        <button 
+                                          type="button"
+                                          className="btn btn-success btn-sm w-100"
+                                          onClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            criarVendaComLoja(loja.id)
+                                          }}
+                                        >
+                                          <i className="fas fa-plus me-1"></i>
+                                          Criar Venda
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           </div>

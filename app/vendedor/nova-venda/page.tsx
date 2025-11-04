@@ -302,16 +302,31 @@ export default function NovaVenda() {
     }
   }
 
-  const buscarTiposCotacao = async () => {
+  const buscarTiposCotacao = async (lojaId?: string) => {
     if (!token) {
       return
     }
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/vendas/vendedor/tipos-cotacao`, {
+      let endpoint = `${API_BASE_URL}/api/vendas/vendedor/tipos-cotacao`
+      
+      // Se veio lojaId da busca FIPE, buscar tipos específicos da loja
+      if (lojaId) {
+        endpoint = `${API_BASE_URL}/api/lojas/${lojaId}/tipos-cotacao`
+        console.log('Buscando tipos de cotação da loja:', lojaId)
+        console.log('Endpoint:', endpoint)
+      }
+      
+      const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       })
+      
+      console.log('Resposta tipos de cotação:', response.data)
       setTiposCotacao(Array.isArray(response.data) ? response.data : [])
+      
+      if (lojaId && response.data.length > 0) {
+        showToast(`${response.data.length} tipos de cotação carregados da loja selecionada`, 'success')
+      }
     } catch (error) {
       console.error('Erro ao buscar tipos de cotação:', error)
       setTiposCotacao([])
@@ -353,10 +368,14 @@ export default function NovaVenda() {
   useEffect(() => {
     if (token) {
       buscarClientes()
-      buscarTiposCotacao()
+      
+      // Verificar se há lojaId nos parâmetros da URL
+      const lojaId = searchParams?.get('lojaId')
+      buscarTiposCotacao(lojaId || undefined)
+      
       buscarVendedorInfo()
     }
-  }, [token])
+  }, [token, searchParams])
 
   // Criar cards pré-definidos apenas para carros
   useEffect(() => {

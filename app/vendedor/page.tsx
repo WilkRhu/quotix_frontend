@@ -304,7 +304,7 @@ export default function PerfilVendedor() {
 
   const carregarLojasAutorizadas = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/vendedor/lojas-autorizadas`, {
+      const response = await axios.get(`${API_BASE_URL}/api/vendas-avulso/minhas-lojas`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setLojasAutorizadas(response.data || [])
@@ -811,6 +811,50 @@ export default function PerfilVendedor() {
         />
 
         {loading && <ChartsSkeleton />}
+
+        {/* Botão de Busca FIPE para vendedores avulsos */}
+        {vendedor?.tipoVendedor === 'avulso' && (
+          <div className="row mt-4">
+            <div className="col-12">
+              <div className="card border-info">
+                <div className="card-header pb-0 bg-info text-white">
+                  <h6><i className="fas fa-search me-2"></i>Ferramentas do Vendedor Avulso</h6>
+                  <p className="text-sm mb-0">Acesse ferramentas para encontrar lojas e consultar valores</p>
+                </div>
+                <div className="card-body">
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <div className="card h-100 border-primary">
+                        <div className="card-body text-center">
+                          <i className="fas fa-search fa-3x text-primary mb-3"></i>
+                          <h6>Busca FIPE</h6>
+                          <p className="text-sm text-muted mb-3">Consulte valores de veículos e encontre lojas disponíveis</p>
+                          <a href="/vendedor/busca-fipe" className="btn btn-primary">
+                            <i className="fas fa-search me-1"></i>
+                            Acessar Busca FIPE
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <div className="card h-100 border-success">
+                        <div className="card-body text-center">
+                          <i className="fas fa-store fa-3x text-success mb-3"></i>
+                          <h6>Solicitar Lojas</h6>
+                          <p className="text-sm text-muted mb-3">Solicite autorização para trabalhar em novas lojas</p>
+                          <a href="/vendedor/solicitar-lojas" className="btn btn-success">
+                            <i className="fas fa-paper-plane me-1"></i>
+                            Solicitar Autorização
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {vendedor?.tipoVendedor === 'avulso' && lojasAutorizadas.length > 0 && (
           <div className="row mt-4">
