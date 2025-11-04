@@ -137,24 +137,40 @@ export default function PainelCliente() {
       setError('')
 
       try {
-  const response = await fetch(`${API_BASE_URL}/api/vendas/cliente/${user.id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendas/cliente/${user.id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         })
 
         if (!response.ok) {
-          throw new Error('Erro ao buscar compras do cliente')
+          
+          if (response.status === 401) {
+            setError('Sessão expirada. Faça login novamente.')
+            showToast('Sessão expirada. Faça login novamente.', 'error')
+          } else if (response.status === 403) {
+            setError('Acesso negado. Você não tem permissão para visualizar estes dados.')
+            showToast('Acesso negado.', 'error')
+          } else {
+            setError('Erro ao carregar suas compras. Tente novamente.')
+            showToast('Erro ao carregar suas compras.', 'error')
+          }
+          return
         }
 
         const data = await response.json()
         const lista = Array.isArray(data) ? data : []
         setVendas(lista)
       } catch (err) {
-        console.error('Erro ao buscar compras do cliente:', err)
         setVendas([])
-        setError('Não foi possível carregar suas compras no momento.')
-        showToast('Erro ao carregar suas compras.', 'error')
+        
+        if (err instanceof TypeError && err.message.includes('fetch')) {
+          setError('Erro de conexão. Verifique sua internet e tente novamente.')
+          showToast('Erro de conexão.', 'error')
+        } else {
+          setError('Não foi possível carregar suas compras no momento.')
+          showToast('Erro ao carregar suas compras.', 'error')
+        }
       } finally {
         setLoading(false)
       }
@@ -171,10 +187,6 @@ export default function PainelCliente() {
     const mapa = new Map<string, VeiculoResumo>()
 
     vendas.forEach((venda) => {
-      // Filtrar apenas vendas confirmadas para o cálculo do investimento
-      if (venda.status !== 'confirmada') {
-        return
-      }
 
       const placaSegment = venda.placa ? venda.placa.trim().toUpperCase() : 'SEM-PLACA'
       const key = [placaSegment, venda.tipoVeiculo, venda.marca, venda.modelo, venda.ano].join('|')
@@ -216,13 +228,15 @@ export default function PainelCliente() {
     })
   }, [vendas])
 
-  const totalCompras = vendas.filter(venda => venda.status === 'confirmada').length
-  const totalVeiculos = resumoPorVeiculo.length
-  const totalPremio = resumoPorVeiculo.reduce((acc, item) => acc + item.totalSeguro, 0)
+  const totalCompras = vendas.length
+  const totalVeiculos = new Set(vendas.map(v => `${v.tipoVeiculo}-${v.marca}-${v.modelo}-${v.ano}-${v.placa || 'sem-placa'}`)).size
+  const totalPremio = vendas.reduce((acc, venda) => acc + parseCurrency(venda.valorSeguro), 0)
 
   return (
     <ProtectedRoute requiredRoles={[Role.CLIENT]}>
       <DashboardLayout title="Meu Painel">
+
+
         <div className="row">
           <div className="col-12 mb-4">
             <div className="card card-profile shadow-lg border-0">

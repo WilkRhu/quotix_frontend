@@ -61,7 +61,58 @@ export default function DocumentUploadCards({ clienteId, onUploadComplete }: Doc
         setPreviews(prev => ({ ...prev, [key]: result }));
       };
       reader.readAsDataURL(file);
+    } else if (file.type === 'application/pdf') {
+      setPreviews(prev => ({ ...prev, [key]: 'PDF' }));
     }
+  };
+
+  const isImageFile = (url: string) => {
+    return url && (url.includes('data:image') || url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+  };
+
+  const isPdfFile = (url: string) => {
+    return url && (url === 'PDF' || url.includes('.pdf') || url.includes('application/pdf'));
+  };
+
+  const renderFilePreview = (url: string | undefined, previewKey: string, altText: string) => {
+    const preview = previews[previewKey];
+    const fileUrl = preview || url;
+    
+    if (!fileUrl) {
+      return (
+        <div>
+          <i className="fas fa-image fa-2x text-muted mb-2"></i>
+          <p className="small text-muted mb-0">{altText}</p>
+        </div>
+      );
+    }
+    
+    if (isPdfFile(fileUrl)) {
+      return (
+        <div>
+          <i className="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+          <p className="small text-muted mb-0">PDF</p>
+        </div>
+      );
+    }
+    
+    if (isImageFile(fileUrl)) {
+      return (
+        <img 
+          src={fileUrl} 
+          alt={altText} 
+          className="img-fluid rounded"
+          style={{ maxHeight: '100px' }}
+        />
+      );
+    }
+    
+    return (
+      <div>
+        <i className="fas fa-file fa-2x text-muted mb-2"></i>
+        <p className="small text-muted mb-0">Arquivo</p>
+      </div>
+    );
   };
 
   const handleUploadClick = async (tipo: string, lado: 'frente' | 'verso') => {
@@ -210,18 +261,10 @@ export default function DocumentUploadCards({ clienteId, onUploadComplete }: Doc
                       className="border rounded p-3 text-center mb-2"
                       style={{ minHeight: '120px' }}
                     >
-                      {previews[`${selectedIdentityType}-frente`] || getDocumento(selectedIdentityType)?.arquivo ? (
-                        <img 
-                          src={previews[`${selectedIdentityType}-frente`] || getDocumento(selectedIdentityType)!.arquivo} 
-                          alt="Frente" 
-                          className="img-fluid rounded"
-                          style={{ maxHeight: '100px' }}
-                        />
-                      ) : (
-                        <div>
-                          <i className="fas fa-image fa-2x text-muted mb-2"></i>
-                          <p className="small text-muted mb-0">Frente</p>
-                        </div>
+                      {renderFilePreview(
+                        getDocumento(selectedIdentityType)?.arquivo,
+                        `${selectedIdentityType}-frente`,
+                        'Frente'
                       )}
                     </div>
                     <input
@@ -264,18 +307,10 @@ export default function DocumentUploadCards({ clienteId, onUploadComplete }: Doc
                       className="border rounded p-3 text-center mb-2"
                       style={{ minHeight: '120px' }}
                     >
-                      {previews[`${selectedIdentityType}-verso`] || getDocumento(selectedIdentityType)?.arquivoVerso ? (
-                        <img 
-                          src={previews[`${selectedIdentityType}-verso`] || getDocumento(selectedIdentityType)!.arquivoVerso} 
-                          alt="Verso" 
-                          className="img-fluid rounded"
-                          style={{ maxHeight: '100px' }}
-                        />
-                      ) : (
-                        <div>
-                          <i className="fas fa-image fa-2x text-muted mb-2"></i>
-                          <p className="small text-muted mb-0">Verso</p>
-                        </div>
+                      {renderFilePreview(
+                        getDocumento(selectedIdentityType)?.arquivoVerso,
+                        `${selectedIdentityType}-verso`,
+                        'Verso'
                       )}
                     </div>
                     <input
@@ -336,18 +371,10 @@ export default function DocumentUploadCards({ clienteId, onUploadComplete }: Doc
                       className="border rounded p-3 text-center mb-2"
                       style={{ minHeight: '120px' }}
                     >
-                      {previews['comprovante_residencia-frente'] || getDocumento('comprovante_residencia')?.arquivo ? (
-                        <img 
-                          src={previews['comprovante_residencia-frente'] || getDocumento('comprovante_residencia')!.arquivo} 
-                          alt="Frente" 
-                          className="img-fluid rounded"
-                          style={{ maxHeight: '100px' }}
-                        />
-                      ) : (
-                        <div>
-                          <i className="fas fa-image fa-2x text-muted mb-2"></i>
-                          <p className="small text-muted mb-0">Frente</p>
-                        </div>
+                      {renderFilePreview(
+                        getDocumento('comprovante_residencia')?.arquivo,
+                        'comprovante_residencia-frente',
+                        'Frente'
                       )}
                     </div>
                     <input
@@ -390,18 +417,10 @@ export default function DocumentUploadCards({ clienteId, onUploadComplete }: Doc
                       className="border rounded p-3 text-center mb-2"
                       style={{ minHeight: '120px' }}
                     >
-                      {previews['comprovante_residencia-verso'] || getDocumento('comprovante_residencia')?.arquivoVerso ? (
-                        <img 
-                          src={previews['comprovante_residencia-verso'] || getDocumento('comprovante_residencia')!.arquivoVerso} 
-                          alt="Verso" 
-                          className="img-fluid rounded"
-                          style={{ maxHeight: '100px' }}
-                        />
-                      ) : (
-                        <div>
-                          <i className="fas fa-image fa-2x text-muted mb-2"></i>
-                          <p className="small text-muted mb-0">Verso</p>
-                        </div>
+                      {renderFilePreview(
+                        getDocumento('comprovante_residencia')?.arquivoVerso,
+                        'comprovante_residencia-verso',
+                        'Verso'
                       )}
                     </div>
                     <input
@@ -468,12 +487,21 @@ export default function DocumentUploadCards({ clienteId, onUploadComplete }: Doc
                         {documento.arquivo && (
                           <div className="col-6">
                             <small className="text-muted">Frente</small>
-                            <img 
-                              src={documento.arquivo} 
-                              alt="Frente" 
-                              className="img-fluid rounded border mb-2"
-                              style={{ maxHeight: '80px', width: '100%', objectFit: 'cover' }}
-                            />
+                            <div className="border rounded p-2 mb-2 d-flex align-items-center justify-content-center" style={{ minHeight: '80px' }}>
+                              {isPdfFile(documento.arquivo) ? (
+                                <div className="text-center">
+                                  <i className="fas fa-file-pdf fa-2x text-danger mb-1"></i>
+                                  <p className="small text-muted mb-0">PDF</p>
+                                </div>
+                              ) : (
+                                <img 
+                                  src={documento.arquivo} 
+                                  alt="Frente" 
+                                  className="img-fluid rounded"
+                                  style={{ maxHeight: '80px', width: '100%', objectFit: 'cover' }}
+                                />
+                              )}
+                            </div>
                             <div className="d-flex gap-1">
                               <button
                                 className="btn btn-outline-primary btn-sm flex-fill"
@@ -502,12 +530,21 @@ export default function DocumentUploadCards({ clienteId, onUploadComplete }: Doc
                         {documento.arquivoVerso && (
                           <div className="col-6">
                             <small className="text-muted">Verso</small>
-                            <img 
-                              src={documento.arquivoVerso} 
-                              alt="Verso" 
-                              className="img-fluid rounded border mb-2"
-                              style={{ maxHeight: '80px', width: '100%', objectFit: 'cover' }}
-                            />
+                            <div className="border rounded p-2 mb-2 d-flex align-items-center justify-content-center" style={{ minHeight: '80px' }}>
+                              {isPdfFile(documento.arquivoVerso) ? (
+                                <div className="text-center">
+                                  <i className="fas fa-file-pdf fa-2x text-danger mb-1"></i>
+                                  <p className="small text-muted mb-0">PDF</p>
+                                </div>
+                              ) : (
+                                <img 
+                                  src={documento.arquivoVerso} 
+                                  alt="Verso" 
+                                  className="img-fluid rounded"
+                                  style={{ maxHeight: '80px', width: '100%', objectFit: 'cover' }}
+                                />
+                              )}
+                            </div>
                             <div className="d-flex gap-1">
                               <button
                                 className="btn btn-outline-primary btn-sm flex-fill"

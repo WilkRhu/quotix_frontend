@@ -7,7 +7,7 @@ export enum Role {
 }
 
 export interface User {
-  id: number;
+  id: string; // Mudado de number para string (UUID)
   name: string;
   email: string;
   telefone?: string;

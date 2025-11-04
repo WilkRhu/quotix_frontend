@@ -376,114 +376,152 @@ export default function TiposCotacaoLojista() {
                   Novo Tipo
                 </button>
               </div>
-              <div className="card-body">
-                <div className="table-responsive">
-                  <table className="table align-items-center mb-0">
-                    <thead>
-                      <tr>
-                        <th>Nome</th>
-                        <th>Base de Cálculo</th>
-                        <th>Taxa de Adesão</th>
-                        <th>Comissão de Vendas</th>
-                        <th>Ano Mínimo</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tiposCotacao.map((tipo) => (
-                        <tr key={tipo.id}>
-                          <td>
-                            <h6 className="mb-0">{tipo.nome}</h6>
-                            {tipo.descricao && <small className="text-muted">{tipo.descricao}</small>}
-                          </td>
-                          <td>
-                            {tipo.temBaseCalculo ? (
-                              <div>
-                                <span>{tipo.baseCalculoTipo === 'percentual' ? 'Percentual da FIPE' : 'Valor Fixo'}</span>
-                                <br />
-                                <small className="text-muted">
-                                  {(() => {
-                                    if (tipo.baseCalculoTipo === 'percentual') {
-                                      const percentText = formatPercent(tipo.baseCalculoPercentual)
-                                      return percentText ? `${percentText} da FIPE` : 'N/A'
-                                    }
+              <div className="card-body pt-4">
+                <div className="row g-4">
+                  {tiposCotacao.map((tipo) => (
+                    <div className="col-md-6 col-xl-4" key={tipo.id}>
+                      <div className="card h-100 position-relative border border-light shadow-sm" style={{ transition: 'all 0.3s ease' }}>
+                        <div className="position-absolute top-0 end-0">
+                          <div className={`${tipo.ativo ? 'bg-primary' : 'bg-danger'} text-white px-3 py-1 rounded-bottom-start`}>
+                            <i className={`fas ${tipo.ativo ? 'fa-check-circle' : 'fa-times-circle'} me-1`}></i>
+                            <small className="fw-bold">{tipo.ativo ? 'ATIVO' : 'INATIVO'}</small>
+                          </div>
+                        </div>
 
-                                    if (tipo.baseCalculoTipo === 'fixa') {
-                                      const numeric = Number(tipo.baseCalculoValorFixo)
-                                      return Number.isFinite(numeric) ? formatCurrency(numeric) : 'N/A'
-                                    }
-
-                                    return 'N/A'
-                                  })()}
-                                </small>
-                              </div>
-                            ) : (
-                              <span className="text-muted">N/A</span>
-                            )}
-                          </td>
-                          <td>
-                            {tipo.temTaxaAdesao ? (
-                              <div>
-                                {(() => {
-                                  if (tipo.taxaAdesaoTipo === 'valor') {
-                                    const numeric = Number(tipo.taxaAdesaoValor)
-                                    return Number.isFinite(numeric) ? <span>{formatCurrency(numeric)}</span> : null
-                                  }
-
-                                  if (tipo.taxaAdesaoTipo === 'percentual') {
-                                    const percentText = formatPercent(tipo.taxaAdesaoPercentual)
-                                    return percentText ? <span>{percentText}</span> : null
-                                  }
-
-                                  return null
-                                })()}
-                              </div>
-                            ) : (
-                              <span className="text-muted">Sem taxa</span>
-                            )}
-                          </td>
-                          <td>{renderComissao(tipo)}</td>
-                          <td>
-                            {tipo.anoMinimoVeiculo ? (
-                              <span className="badge bg-info">{tipo.anoMinimoVeiculo}</span>
-                            ) : (
-                              <span className="text-muted">Sem restrição</span>
-                            )}
-                          </td>
-                          <td>
-                            <span className={`badge badge-sm ${tipo.ativo ? 'bg-gradient-success' : 'bg-gradient-danger'}`}>
-                              {tipo.ativo ? 'Ativo' : 'Inativo'}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="d-flex gap-2">
-                              <button
-                                className="btn btn-link p-0 text-primary"
-                                onClick={() => openEditModal(tipo)}
-                                title="Editar tipo"
-                              >
-                                <i className="fas fa-edit"></i>
-                              </button>
-                              <button
-                                className="btn btn-link p-0 text-warning"
-                                onClick={() => handleToggleAtivo(tipo)}
-                                disabled={actionLoadingId === tipo.id}
-                                title={tipo.ativo ? 'Desativar' : 'Ativar'}
-                              >
-                                {actionLoadingId === tipo.id ? (
-                                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                ) : (
-                                  <i className={`fas fa-toggle-${tipo.ativo ? 'on' : 'off'}`}></i>
-                                )}
-                              </button>
+                        <div className="card-body d-flex flex-column p-4">
+                          <div className="text-center mb-4">
+                            <div className="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10" style={{ width: '60px', height: '60px' }}>
+                              <i className="fas fa-calculator fs-4 text-white"></i>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            <h5 className="fw-bold mb-2">{tipo.nome}</h5>
+                            {tipo.descricao && (
+                              <p className="text-muted small mb-0">{tipo.descricao}</p>
+                            )}
+                            {tipo.tipoVeiculo && (
+                              <div className="badge bg-info text-white mt-2">
+                                <i className="fas fa-car me-1"></i>
+                                {tipo.tipoVeiculo}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mb-4 flex-grow-1">
+                            <div className="mb-3">
+                              <div className="d-flex align-items-center mb-1">
+                                <i className="fas fa-calculator text-primary me-2"></i>
+                                <small className="fw-bold text-uppercase text-muted">Base de Cálculo</small>
+                              </div>
+                              {tipo.temBaseCalculo ? (
+                                <div className="ps-4">
+                                  <div className="fw-medium">{tipo.baseCalculoTipo === 'percentual' ? 'Percentual da FIPE' : 'Valor Fixo'}</div>
+                                  <small className="text-muted">
+                                    {(() => {
+                                      if (tipo.baseCalculoTipo === 'percentual') {
+                                        const percentText = formatPercent(tipo.baseCalculoPercentual)
+                                        return percentText ? `${percentText} da FIPE` : 'N/A'
+                                      }
+                                      if (tipo.baseCalculoTipo === 'fixa') {
+                                        const numeric = Number(tipo.baseCalculoValorFixo)
+                                        return Number.isFinite(numeric) ? formatCurrency(numeric) : 'N/A'
+                                      }
+                                      return 'N/A'
+                                    })()
+                                    }
+                                  </small>
+                                </div>
+                              ) : (
+                                <div className="ps-4 text-muted">Não configurada</div>
+                              )}
+                            </div>
+
+                            <div className="mb-3">
+                              <div className="d-flex align-items-center mb-1">
+                                <i className="fas fa-tag text-warning me-2"></i>
+                                <small className="fw-bold text-uppercase text-muted">Taxa de Adesão</small>
+                              </div>
+                              <div className="ps-4">
+                                {tipo.temTaxaAdesao ? (
+                                  <div>
+                                    {(() => {
+                                      if (tipo.taxaAdesaoTipo === 'valor') {
+                                        const numeric = Number(tipo.taxaAdesaoValor)
+                                        return Number.isFinite(numeric) ? <span className="fw-medium">{formatCurrency(numeric)}</span> : null
+                                      }
+                                      if (tipo.taxaAdesaoTipo === 'percentual') {
+                                        const percentText = formatPercent(tipo.taxaAdesaoPercentual)
+                                        return percentText ? <span className="fw-medium">{percentText}</span> : null
+                                      }
+                                      return null
+                                    })()
+                                    }
+                                  </div>
+                                ) : (
+                                  <span className="text-muted">Sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mb-3">
+                              <div className="d-flex align-items-center mb-1">
+                                <i className="fas fa-percentage text-success me-2"></i>
+                                <small className="fw-bold text-uppercase text-muted">Comissão</small>
+                              </div>
+                              <div className="ps-4">
+                                <div className="small">{renderComissao(tipo)}</div>
+                              </div>
+                            </div>
+
+                            {tipo.anoMinimoVeiculo && (
+                              <div className="mb-3">
+                                <div className="d-flex align-items-center mb-1">
+                                  <i className="fas fa-calendar text-info me-2"></i>
+                                  <small className="fw-bold text-uppercase text-muted">Ano Mínimo</small>
+                                </div>
+                                <div className="ps-4">
+                                  <span className="badge bg-info">{tipo.anoMinimoVeiculo}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="d-flex gap-2 mt-auto">
+                            <button
+                              className="btn btn-outline-primary flex-fill"
+                              onClick={() => openEditModal(tipo)}
+                              title="Editar tipo"
+                            >
+                              <i className="fas fa-edit me-1"></i>
+                              Editar
+                            </button>
+                            <button
+                              className={`btn ${tipo.ativo ? 'btn-outline-warning' : 'btn-outline-success'} flex-fill`}
+                              onClick={() => handleToggleAtivo(tipo)}
+                              disabled={actionLoadingId === tipo.id}
+                              title={tipo.ativo ? 'Desativar' : 'Ativar'}
+                            >
+                              {actionLoadingId === tipo.id ? (
+                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                              ) : (
+                                <>
+                                  <i className={`fas ${tipo.ativo ? 'fa-pause' : 'fa-play'} me-1`}></i>
+                                  {tipo.ativo ? 'Desativar' : 'Ativar'}
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+
+                {tiposCotacao.length === 0 && (
+                  <div className="text-center py-5">
+                    <i className="fas fa-calculator fs-1 text-muted mb-3"></i>
+                    <h5 className="text-muted">Nenhum tipo de cotação cadastrado</h5>
+                    <p className="text-muted">Clique em "Novo Tipo" para criar seu primeiro tipo de cotação.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

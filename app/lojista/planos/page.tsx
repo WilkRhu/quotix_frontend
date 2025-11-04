@@ -10,6 +10,26 @@ import { useAuth } from '@/stories/authStore'
 import React from 'react'
 import { useToast } from '@/stories/toastStore'
 
+// Estilos customizados para os cards
+const cardStyles = `
+  .hover-shadow-lg:hover {
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+    transform: translateY(-2px);
+  }
+  .transform-scale-105 {
+    transform: scale(1.02) !important;
+  }
+  .card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .opacity-60 {
+    opacity: 0.6;
+  }
+  .lh-base {
+    line-height: 1.5;
+  }
+`
+
 // Componente Cronômetro Regressivo
 function CronometroRegressivo({ dataVencimento }: { dataVencimento?: string }) {
   const [tempo, setTempo] = useState({ dias: 0, horas: 0, minutos: 0, segundos: 0 })
@@ -261,57 +281,86 @@ export default function PlanoLojista() {
   return (
     <ProtectedRoute requiredRoles={[Role.LOJISTA, Role.LOGIST]}>
       <DashboardLayout title="Planos da Loja">
+        <style dangerouslySetInnerHTML={{ __html: cardStyles }} />
         <div className="row">
           {/* Card do Plano Atual */}
           <div className="col-12 mb-4">
-            <div className="card border-0 shadow-lg bg-gradient-primary">
-              <div className="card-body text-white">
+            <div className="card border-0 shadow-lg" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+              <div className="card-body text-white p-4">
                 <div className="row align-items-center">
                   <div className="col-md-8">
                     {loja?.plano && !loja.plano.isTrial ? (
                       <>
-                        <h3 className="mb-2">
-                          <i className="fas fa-star me-2"></i>
-                          {loja.plano.nome}
-                        </h3>
-                        <p className="mb-1 fs-6">
-                          R$ {Number(valorMensalAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
-                        </p>
-                        <small>Seu plano atual</small>
+                        <div className="d-flex align-items-center mb-3">
+                          <div className="bg-white bg-opacity-20 rounded-circle p-3 me-3">
+                            <i className="fas fa-crown text-warning fs-4"></i>
+                          </div>
+                          <div>
+                            <h3 className="mb-1 fw-bold">{loja.plano.nome}</h3>
+                            <div className="d-flex align-items-baseline gap-1">
+                              <span className="fs-4 fw-bold">
+                                R$ {Number(valorMensalAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                              <span className="fs-6 opacity-75">/mês</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center">
+                          <i className="fas fa-check-circle me-2 text-success"></i>
+                          <span className="fw-medium">Plano Ativo</span>
+                        </div>
                       </>
                     ) : (
                       <>
-                        <h3 className="mb-2">
-                          <i className="fas fa-gift me-2"></i>
-                          Plano Trial - Teste Gratuito
-                        </h3>
-                        {loja?.assinatura?.dataInicio && (
-                          <>
-                            <p className="mb-1 fs-6">
-                              De {new Date(loja.assinatura.dataInicio).toLocaleDateString('pt-BR')} até{' '}
-                              {loja?.assinatura?.trialVencimentoEm
-                                ? new Date(loja.assinatura.trialVencimentoEm).toLocaleDateString('pt-BR')
-                                : new Date(new Date(loja.assinatura.dataInicio).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}
-                            </p>
-                            <small>Aproveite esse período para conhecer todas as funcionalidades!</small>
-                          </>
-                        )}
+                        <div className="d-flex align-items-center mb-3">
+                          <div className="bg-white bg-opacity-20 rounded-circle p-3 me-3">
+                            <i className="fas fa-gift text-warning fs-4"></i>
+                          </div>
+                          <div>
+                            <h3 className="mb-1 fw-bold">Período de Teste Gratuito</h3>
+                            {loja?.assinatura?.dataInicio && (
+                              <div className="fs-6 opacity-90">
+                                <span className="fw-medium">Válido até: </span>
+                                {loja?.assinatura?.trialVencimentoEm
+                                  ? new Date(loja.assinatura.trialVencimentoEm).toLocaleDateString('pt-BR')
+                                  : new Date(new Date(loja.assinatura.dataInicio).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center">
+                          <i className="fas fa-clock me-2 text-warning"></i>
+                          <span className="fw-medium">Explore todas as funcionalidades!</span>
+                        </div>
                       </>
                     )}
                   </div>
                   <div className="col-md-4 text-end">
                     {((!loja?.plano || loja?.plano?.isTrial) && diasRestantesTrialAtual > 0) && loja?.assinatura?.trialVencimentoEm && (
-                      <CronometroRegressivo dataVencimento={loja.assinatura.trialVencimentoEm} />
+                      <div className="bg-white bg-opacity-15 rounded-3 p-3">
+                        <div className="text-center mb-2">
+                          <small className="text-uppercase fw-bold opacity-75">Tempo Restante</small>
+                        </div>
+                        <CronometroRegressivo dataVencimento={loja.assinatura.trialVencimentoEm} />
+                      </div>
                     )}
                     {((!loja?.plano || loja?.plano?.isTrial) && diasRestantesTrialAtual > 0) && !loja?.assinatura?.trialVencimentoEm && loja?.assinatura?.dataInicio && (
-                      <CronometroRegressivo
-                        dataVencimento={new Date(new Date(loja.assinatura.dataInicio).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()}
-                      />
+                      <div className="bg-white bg-opacity-15 rounded-3 p-3">
+                        <div className="text-center mb-2">
+                          <small className="text-uppercase fw-bold opacity-75">Tempo Restante</small>
+                        </div>
+                        <CronometroRegressivo
+                          dataVencimento={new Date(new Date(loja.assinatura.dataInicio).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()}
+                        />
+                      </div>
                     )}
                     {((!loja?.plano || loja?.plano?.isTrial) && diasRestantesTrialAtual <= 0) && (
-                      <div className="badge bg-danger p-3">
-                        <i className="fas fa-exclamation-circle me-2"></i>
-                        Trial expirado
+                      <div className="bg-danger bg-opacity-20 border border-danger border-opacity-50 rounded-3 p-3">
+                        <div className="text-center">
+                          <i className="fas fa-exclamation-triangle fs-4 mb-2 text-warning"></i>
+                          <div className="fw-bold">Trial Expirado</div>
+                          <small className="opacity-75">Escolha um plano para continuar</small>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -323,13 +372,18 @@ export default function PlanoLojista() {
           {/* Grid de Planos Disponíveis */}
           <div className="col-12">
             <div className="card border-0 shadow-sm">
-              <div className="card-header pb-0 bg-light">
-                <h5 className="mb-0">
-                  <i className="fas fa-box me-2"></i>
-                  Planos Disponíveis
-                </h5>
+              <div className="card-header border-0 bg-white pb-0">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h5 className="mb-1 fw-bold">
+                      <i className="fas fa-layer-group me-2 text-primary"></i>
+                      Escolha seu Plano
+                    </h5>
+                    <p className="text-muted mb-0 small">Selecione o plano ideal para sua loja</p>
+                  </div>
+                </div>
               </div>
-              <div className="card-body">
+              <div className="card-body pt-4">
                 <div className="row g-4">
                   {planos.map((p) => {
                     const mensalNum = Number(p.precoMensal ?? 0)
@@ -345,79 +399,136 @@ export default function PlanoLojista() {
                                          isAtual // Plano atual
 
                     return (
-                      <div className="col-md-6 col-lg-4" key={p.id}>
+                      <div className="col-md-6 col-xl-4" key={p.id}>
                         <div
                           role="button"
-                          className={`card h-100 transition-all ${
-                            !podeSelecionar ? 'opacity-50' : ''
+                          className={`card h-100 position-relative overflow-hidden ${
+                            !podeSelecionar ? 'opacity-60' : ''
                           } ${isSelecionado
-                              ? 'border-2 border-primary shadow-lg'
+                              ? 'border-2 border-primary shadow-lg transform-scale-105'
                               : isAtual
-                                ? 'border-2 border-success shadow'
-                                : 'border-1 border-light shadow-sm'
-                            } ${isAtual ? 'bg-light' : ''}`}
+                                ? 'border-2 border-primary shadow-md'
+                                : 'border border-light shadow-sm hover-shadow-lg'
+                            }`}
                           onClick={() => podeSelecionar && setPlanoSelecionado(p.id)}
                           style={{ 
                             cursor: podeSelecionar ? 'pointer' : 'not-allowed', 
-                            transition: 'all 0.3s ease' 
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            transform: isSelecionado ? 'scale(1.02)' : 'scale(1)'
                           }}
                         >
-                          <div className="card-body d-flex flex-column">
-                            <div className="d-flex gap-2 mb-2 flex-wrap">
-                              {isAtual && (
-                                <span className="badge bg-success">
-                                  <i className="fas fa-check-circle me-1"></i>Ativo
-                                </span>
-                              )}
-                              {isSelecionado && !isAtual && (
-                                <span className="badge bg-primary">
-                                  <i className="fas fa-hand-point-left me-1"></i>Selecionado
-                                </span>
-                              )}
-                              {mensalNum === 0 && (
-                                <span className="badge bg-success">
-                                  <i className="fas fa-gift me-1"></i>Gratuito
-                                </span>
-                              )}
-                              {!podeSelecionar && !isAtual && (
-                                <span className="badge bg-secondary">
-                                  <i className="fas fa-lock me-1"></i>Indisponível
-                                </span>
+                          {/* Badge de destaque */}
+                          {isAtual && (
+                            <div className="position-absolute top-0 end-0">
+                              <div className="bg-primary text-white px-3 py-1 rounded-bottom-start">
+                                <i className="fas fa-check-circle me-1"></i>
+                                <small className="fw-bold">ATIVO</small>
+                              </div>
+                            </div>
+                          )}
+                          {isSelecionado && !isAtual && (
+                            <div className="position-absolute top-0 end-0">
+                              <div className="bg-primary text-white px-3 py-1 rounded-bottom-start">
+                                <i className="fas fa-cursor me-1"></i>
+                                <small className="fw-bold">SELECIONADO</small>
+                              </div>
+                            </div>
+                          )}
+                          {!podeSelecionar && !isAtual && (
+                            <div className="position-absolute top-0 end-0">
+                              <div className="bg-secondary text-white px-3 py-1 rounded-bottom-start">
+                                <i className="fas fa-lock me-1"></i>
+                                <small className="fw-bold">BLOQUEADO</small>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="card-body d-flex flex-column p-4">
+                            {/* Cabeçalho do plano */}
+                            <div className="text-center mb-4">
+                              <div className={`rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center ${
+                                mensalNum === 0 ? 'bg-primary bg-opacity-10' : 
+                                isAtual ? 'bg-primary bg-opacity-10' :
+                                isSelecionado ? 'bg-primary bg-opacity-10' : 'bg-light'
+                              }`} style={{ width: '60px', height: '60px' }}>
+                                <i className={`fas ${
+                                  mensalNum === 0 ? 'fa-gift' :
+                                  isAtual ? 'fa-crown' :
+                                  isSelecionado ? 'fa-star' : 'fa-layer-group'
+                                } fs-4 text-white`}></i>
+                              </div>
+                              <h5 className="fw-bold mb-2">{p.nome}</h5>
+                              {p.descricao && (
+                                <div 
+                                  className="text-muted small lh-base flex-grow-1"
+                                  dangerouslySetInnerHTML={{ __html: p.descricao }}
+                                />
                               )}
                             </div>
 
-                            <h6 className="fw-bold mb-1">{p.nome}</h6>
-                            {p.descricao && (
-                              <p className="text-muted small mb-3 flex-grow-1">{p.descricao}</p>
-                            )}
-
-                            <div className="mt-auto">
+                            {/* Preço */}
+                            <div className="text-center mb-4">
                               {mensalNum > 0 ? (
                                 <>
                                   <div className="mb-2">
-                                    <div className="fw-bold text-primary fs-5">
+                                    <span className="display-6 fw-bold text-dark">
                                       R$ {mensalNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </div>
-                                    <small className="text-muted">/mês</small>
+                                    </span>
+                                    <span className="text-muted fs-6">/mês</span>
                                   </div>
                                   {anualNum > 0 && (
-                                    <div className="small text-secondary">
-                                      <i className="fas fa-calendar me-1"></i>
-                                      R$ {anualNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/ano
+                                    <div className="small text-primary fw-medium">
+                                      <i className="fas fa-calendar-alt me-1"></i>
+                                      Anual: R$ {anualNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                      <div className="badge bg-primary text-white ms-2">
+                                        Economize {Math.round((1 - (anualNum / (mensalNum * 12))) * 100)}%
+                                      </div>
                                     </div>
                                   )}
                                 </>
                               ) : (
-                                <div className="fw-bold text-success fs-5">
-                                  <i className="fas fa-check-circle me-1"></i>Gratuito
+                                <div className="display-6 fw-bold text-primary">
+                                  <i className="fas fa-gift me-2"></i>
+                                  Gratuito
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Botão de ação */}
+                            <div className="mt-auto">
+                              {isAtual ? (
+                                <div className="btn btn-primary w-100 disabled">
+                                  <i className="fas fa-check-circle me-2"></i>
+                                  Plano Atual
+                                </div>
+                              ) : isSelecionado ? (
+                                <div className="btn btn-primary w-100">
+                                  <i className="fas fa-arrow-down me-2"></i>
+                                  Confirmar Seleção
+                                </div>
+                              ) : podeSelecionar ? (
+                                <div className="btn btn-outline-primary w-100">
+                                  <i className="fas fa-mouse-pointer me-2"></i>
+                                  Selecionar Plano
+                                </div>
+                              ) : (
+                                <div className="btn btn-outline-secondary w-100 disabled">
+                                  <i className="fas fa-lock me-2"></i>
+                                  Indisponível
                                 </div>
                               )}
                             </div>
                           </div>
 
+                          {/* Efeito de seleção */}
                           {isSelecionado && (
-                            <div className="card-footer bg-primary bg-opacity-10 border-0 text-center">
-                              <small className="text-primary fw-bold">Clique no botão abaixo para confirmar</small>
+                            <div className="position-absolute bottom-0 start-0 w-100">
+                              <div className="bg-primary bg-opacity-10 border-top border-primary border-opacity-25 text-center py-2">
+                                <small className="text-primary fw-bold">
+                                  <i className="fas fa-info-circle me-1"></i>
+                                  Clique em "Confirmar Plano" para prosseguir
+                                </small>
+                              </div>
                             </div>
                           )}
                         </div>
